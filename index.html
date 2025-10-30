@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semmelweis University Chatbot Widget Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .demo-content {
+            text-align: center;
+            color: white;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 60px;
+        }
+
+        .demo-content h1 {
+            font-size: 48px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .demo-content p {
+            font-size: 20px;
+            opacity: 0.9;
+            margin-bottom: 32px;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 32px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .demo-card h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .demo-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .demo-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .demo-card li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .demo-card li:last-child {
+            border-bottom: none;
+        }
+
+        .demo-card li::before {
+            content: '✓';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            color: #fff;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .demo-content h1 {
+                font-size: 32px;
+            }
+
+            .demo-card {
+                padding: 24px;
+            }
+
+            .demo-card h2 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-content">
+        <h1>🎓 Semmelweis University</h1>
+        <p>AI-Powered Chatbot Widget - Live Demo</p>
+        
+        <div class="demo-card">
+            <h2>💬 About This Widget</h2>
+            <p>This is a production-ready chat widget for Semmelweis University's Translational Medicine Centre. The widget provides instant answers about programs, admissions, tuition, and more.</p>
+            
+            <ul>
+                <li>Real-time streaming responses via SSE</li>
+                <li>Responsive design (mobile & desktop)</li>
+                <li>Customizable quick questions</li>
+                <li>Session persistence</li>
+                <li>Minimal performance impact</li>
+                <li>Easy integration via single script tag</li>
+            </ul>
+        </div>
+
+        <div class="demo-card">
+            <h2>🚀 Quick Integration</h2>
+            <p>Add this single line before your closing <code>&lt;/body&gt;</code> tag:</p>
+            
+            <div class="code-block">
+&lt;!-- Semmelweis Chatbot Widget --&gt;<br>
+&lt;script src="https://your-project.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
+            </div>
+
+            <p>That's it! The widget will automatically appear on your website.</p>
+        </div>
+
+        <div class="demo-card">
+            <h2>⚙️ Custom Configuration (Optional)</h2>
+            <p>Override default settings by adding this before the widget script:</p>
+            
+            <div class="code-block">
+&lt;script&gt;<br>
+&nbsp;&nbsp;window.ChatbotConfig = {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;quickQuestions: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ text: "Custom question 1?", emoji: "🎯" },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ text: "Custom question 2?", emoji: "📊" },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ text: "Custom question 3?", emoji: "💡" }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;]<br>
+&nbsp;&nbsp;};<br>
+&lt;/script&gt;<br>
+&lt;script src="https://your-project.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <h2>🎨 Try It Now!</h2>
+            <p>Look for the chat bubble in the bottom-right corner or the floating chat bar at the bottom of the page. Click to start chatting!</p>
+            
+            <p style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+                <strong>Note:</strong> This demo connects to a placeholder endpoint. Replace it with your N8N webhook URL for production use.
+            </p>
+        </div>
+
+        <a href="https://github.com/your-repo/semmelweis-chatbot" class="btn" target="_blank">
+            📚 View Documentation
+        </a>
+    </div>
+
+    <!-- Widget Configuration (using placeholder endpoint) -->
+    <script>
+        window.ChatbotConfig = {
+            apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',
+            quickQuestions: [
+                { text: "What programs do you offer?", emoji: "🎓" },
+                { text: "How can I apply?", emoji: "📝" },
+                { text: "Tell me about tuition fees", emoji: "💰" }
+            ]
+        };
+    </script>
+    
+    <!-- Widget Script -->
+    <script src="./chat-widget.js" defer></script>
+</body>
+</html>
