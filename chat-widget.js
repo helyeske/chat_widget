@@ -409,6 +409,7 @@
         .sw-chat-messages {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -624,6 +625,9 @@
             font-size: 15px;
             line-height: 1.6;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
@@ -768,16 +772,19 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            /* MODIFIED: Hide chat input bar on mobile */
             .sw-chat-input-bar {
+                display: none !important;
                 width: calc(100% - 40px);
                 max-width: 320px;
             }
-
+            
             .sw-chat-input-bar.expanded {
                 width: calc(100% - 40px);
                 max-width: 360px;
             }
-
+            
+            /* MODIFIED: Fix panel height and overflow */
             .sw-chat-panel {
                 top: 0;
                 right: 0;
@@ -785,49 +792,65 @@
                 bottom: 0;
                 width: 100%;
                 height: 100vh;
+                height: 100dvh; /* ADD: Dynamic viewport height */
                 border-radius: 0;
                 padding: 8px;
                 gap: 8px;
+                overflow: hidden; /* ADD: Prevent scroll on panel */
             }
-
+            
             .sw-chat-header {
                 padding: 16px 18px;
                 border-radius: 18px;
                 margin: 6px 6px 0 6px;
             }
-
+            
             .sw-chat-header-title {
                 font-size: 20px;
             }
-
+            
             .new-chat-btn {
                 display: none;
             }
-
+            
+            /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
                 padding: 16px;
+                overflow-x: hidden; /* ADD: Prevent horizontal scroll */
+                -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
-
+            
             .sw-chat-input-area {
                 padding: 14px 16px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
-
+            
             .sw-chat-widget-bubble {
                 bottom: 16px;
                 right: 16px;
                 width: 56px;
                 height: 56px;
             }
+            
+            /* NEW: Fix input font size to prevent iOS zoom */
+            .sw-panel-chat-input,
+            .sw-bar-chat-input {
+                font-size: 16px !important;
+            }
+            
+            /* NEW: Fix main card height */
+            .sw-chat-main-card {
+                height: 100%;
+                overflow: hidden;
+            }
         }
-
+        
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
             }
         }
-    `;
     
     // ========================================
     // HTML TEMPLATE
