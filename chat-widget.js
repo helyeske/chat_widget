@@ -115,6 +115,11 @@
         .sw-chat-input-bar.dismissed {
             display: none;
         }
+        @media (max-width: 768px) {
+            .sw-chat-input-bar {
+                display: none !important;
+            }
+         }
 
         .sw-chat-avatar-mini {
             width: 32px;
@@ -1326,7 +1331,6 @@
             
             // Show date + quick questions on first open
             if (this.messageHistory.length === 0) {
-                this.addDateSeparator();
                 this.renderQuickQuestions();
             }
             
