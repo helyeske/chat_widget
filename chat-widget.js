@@ -20,7 +20,7 @@
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 100
+        streamBatchIntervalMs: 150
     };
     
     // Merge with user config if provided
@@ -141,13 +141,49 @@
             border: none;
             outline: none;
             background: transparent;
-            font-size: 14px;
+            font-size: 16px;
             color: #374151;
             padding: 4px 4px;
         }
 
         .sw-bar-chat-input::placeholder {
             color: #6b7280;
+        }
+        /* Prevent body scroll when chat panel is open */
+            body.sw-chat-open {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                height: 100%;
+            }
+    
+        /* Ensure chat panel fills viewport correctly */
+        @media (max-width: 768px) {
+            .sw-chat-panel {
+                top: 0;
+                right: 0;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 100vh;
+                height: 100dvh; /* Dynamic viewport height - accounts for mobile browser chrome */
+                border-radius: 0;
+                padding: 8px;
+                gap: 8px;
+                position: fixed;
+                overflow: hidden; /* Prevent double scroll */
+            }
+    
+            .sw-chat-main-card {
+                height: 100%;
+                overflow: hidden; /* Let only messages area scroll */
+            }
+    
+            .sw-chat-messages {
+                overflow-y: auto;
+                overflow-x: hidden; /* Prevent horizontal scroll */
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
         }
 
         .sw-bar-icon-btn {
@@ -683,7 +719,7 @@
             outline: none;
             background: #f9fafb;
             padding: 12px 16px;
-            font-size: 15px;
+            font-size: 16px;
             font-family: inherit;
             color: #1f2937;
             transition: all 0.25s;
