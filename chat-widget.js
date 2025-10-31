@@ -183,8 +183,8 @@
         }
 
         .sw-bar-icon-btn svg {
-            width: 14px;
-            height: 14px;
+            width: 16px;
+            height: 16px;
         }
 
         /* Persistent Chat Widget Bubble */
