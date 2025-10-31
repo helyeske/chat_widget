@@ -53,7 +53,7 @@
             background: white;
             border-radius: 40px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-            padding: 8px 12px;
+            padding: 6px 12px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -145,10 +145,6 @@
             line-height: 1.2;
             color: #374151;
             padding: 4px 4px;
-        }
-
-        @media (max-width: 768px)  {
-            color: #6b7280;
         }
 
         .sw-bar-icon-btn {
