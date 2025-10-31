@@ -1362,10 +1362,13 @@
             this.chatWidgetBubble.classList.add('chat-open');
             this.chatInputBar.classList.add('hidden');
             
+            // Prevent body scroll on mobile
+            document.body.classList.add('sw-chat-open');
+            
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) badge.style.display = 'none';
             
-            // Show date + quick questions on first open
+            // Show quick questions on first open (timestamp only appears after first Q&A pair)
             if (this.messageHistory.length === 0) {
                 this.renderQuickQuestions();
             }
@@ -1377,6 +1380,9 @@
             this.isPanelOpen = false;
             this.chatPanel.classList.remove('visible');
             this.chatWidgetBubble.classList.remove('chat-open');
+            
+            // Re-enable body scroll
+            document.body.classList.remove('sw-chat-open');
             
             if (!this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
