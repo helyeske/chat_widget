@@ -142,6 +142,7 @@
             outline: none;
             background: transparent;
             font-size: 16px;
+            line-height: 1.2;
             color: #374151;
             padding: 4px 4px;
         }
