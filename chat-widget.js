@@ -20,7 +20,7 @@
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 150
+        streamBatchIntervalMs: 200
     };
     
     // Merge with user config if provided
@@ -53,7 +53,7 @@
             background: white;
             border-radius: 40px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-            padding: 6px 12px;
+            padding: 8px 12px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -149,11 +149,6 @@
 
         @media (max-width: 768px)  {
             color: #6b7280;
-        }
-        
-        /* Prevent body scroll when chat panel is open */
-        body.sw-chat-open {
-            overflow: hidden;
         }
 
         .sw-bar-icon-btn {
@@ -745,7 +740,9 @@
         @media (max-width: 768px) {
             /* Fix body scroll on mobile */
             body.sw-chat-open {
-                position: relative;
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
                 touch-action: none;
             }
             
@@ -974,6 +971,8 @@
             this.scrollThreshold = 100;
             this.sessionId = this.generateUUID();
             this.streamingBuffer = { content: '', messageId: null };
+            this.userIsScrolling = false;
+            this.scrollTimeout = null;
             this.init();
         }
         
@@ -1030,6 +1029,15 @@
             
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
+
+            // Detect user scrolling in chat
+            this.chatMessages.addEventListener('scroll', () => {
+                this.userIsScrolling = true;
+                clearTimeout(this.scrollTimeout);
+                this.scrollTimeout = setTimeout(() => {
+                    this.userIsScrolling = false;
+                }, 1000);  // User stopped scrolling after 1 second
+            });
         }
         
         expandBar() {
@@ -1190,11 +1198,16 @@
                 this.firstMessageSent = true;
             }
             
-            await this.sendMessage(message);
-            
-            this.panelChatInput.disabled = false;
-            this.panelSendBtn.disabled = false;
-            this.panelChatInput.focus();
+            try {
+                await this.sendMessage(message);
+            } catch (error) {
+                console.error('[Chatbot] Send from panel error:', error);
+            } finally {
+                // ALWAYS re-enable, even if there's an error
+                this.panelChatInput.disabled = false;
+                this.panelSendBtn.disabled = false;
+                this.panelChatInput.focus();
+            }
         }
         
         async sendMessage(content) {
@@ -1464,7 +1477,10 @@
                 const contentDiv = messageDiv.querySelector('.sw-message-content');
                 if (contentDiv) {
                     contentDiv.textContent = content;
-                    this.scrollToBottom();
+                    // Only scroll if user is already near bottom or not scrolling
+                    if (this.isNearBottom() && !this.userIsScrolling) {
+                        this.scrollToBottom();
+                    }
                 }
             }
         }
@@ -1511,7 +1527,18 @@
         }
         
         scrollToBottom() {
-            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            // Only auto-scroll if user isn't manually scrolling
+            if (!this.userIsScrolling) {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+        }
+        
+        // Check if user is at bottom of chat (within 100px)
+        isNearBottom() {
+            const threshold = 100;
+            const position = this.chatMessages.scrollTop + this.chatMessages.clientHeight;
+            const height = this.chatMessages.scrollHeight;
+            return position >= height - threshold;
         }
     }
     
