@@ -146,44 +146,13 @@
             padding: 4px 4px;
         }
 
-        .sw-bar-chat-input::placeholder {
+        @media (max-width: 768px)  {
             color: #6b7280;
         }
+        
         /* Prevent body scroll when chat panel is open */
-            body.sw-chat-open {
-                overflow: hidden;
-                position: fixed;
-                width: 100%;
-                height: 100%;
-            }
-    
-        /* Ensure chat panel fills viewport correctly */
-        @media (max-width: 768px) {
-            .sw-chat-panel {
-                top: 0;
-                right: 0;
-                left: 0;
-                bottom: 0;
-                width: 100%;
-                height: 100vh;
-                height: 100dvh; /* Dynamic viewport height - accounts for mobile browser chrome */
-                border-radius: 0;
-                padding: 8px;
-                gap: 8px;
-                position: fixed;
-                overflow: hidden; /* Prevent double scroll */
-            }
-    
-            .sw-chat-main-card {
-                height: 100%;
-                overflow: hidden; /* Let only messages area scroll */
-            }
-    
-            .sw-chat-messages {
-                overflow-y: auto;
-                overflow-x: hidden; /* Prevent horizontal scroll */
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            }
+        body.sw-chat-open {
+            overflow: hidden;
         }
 
         .sw-bar-icon-btn {
@@ -199,6 +168,7 @@
             justify-content: center;
             transition: all 0.25s;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
         .sw-bar-icon-btn.send-btn {
@@ -221,8 +191,8 @@
         }
 
         .sw-bar-icon-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
         }
 
         /* Persistent Chat Widget Bubble */
@@ -772,7 +742,12 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            /* MODIFIED: Hide chat input bar on mobile */
+            /* Fix body scroll on mobile */
+            body.sw-chat-open {
+                position: relative;
+                touch-action: none;
+            }
+            
             .sw-chat-input-bar {
                 display: none !important;
                 width: calc(100% - 40px);
