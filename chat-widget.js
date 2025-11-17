@@ -20,7 +20,7 @@
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 100
+        streamBatchIntervalMs: 200
     };
     
     // Merge with user config if provided
@@ -142,12 +142,9 @@
             outline: none;
             background: transparent;
             font-size: 14px;
+            line-height: 1.2;
             color: #374151;
             padding: 4px 4px;
-        }
-
-        .sw-bar-chat-input::placeholder {
-            color: #6b7280;
         }
 
         .sw-bar-icon-btn {
@@ -163,6 +160,7 @@
             justify-content: center;
             transition: all 0.25s;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
         .sw-bar-icon-btn.send-btn {
@@ -373,6 +371,7 @@
         .sw-chat-messages {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -588,6 +587,9 @@
             font-size: 15px;
             line-height: 1.6;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
@@ -683,7 +685,7 @@
             outline: none;
             background: #f9fafb;
             padding: 12px 16px;
-            font-size: 15px;
+            font-size: 16px;
             font-family: inherit;
             color: #1f2937;
             transition: all 0.25s;
@@ -732,16 +734,26 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            /* Fix body scroll on mobile */
+            body.sw-chat-open {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                touch-action: none;
+            }
+            
             .sw-chat-input-bar {
+                display: none !important;
                 width: calc(100% - 40px);
                 max-width: 320px;
             }
-
+            
             .sw-chat-input-bar.expanded {
                 width: calc(100% - 40px);
                 max-width: 360px;
             }
-
+            
+            /* MODIFIED: Fix panel height and overflow */
             .sw-chat-panel {
                 top: 0;
                 right: 0;
@@ -749,43 +761,60 @@
                 bottom: 0;
                 width: 100%;
                 height: 100vh;
+                height: 100dvh; /* ADD: Dynamic viewport height */
                 border-radius: 0;
                 padding: 8px;
                 gap: 8px;
+                overflow: hidden; /* ADD: Prevent scroll on panel */
             }
-
+            
             .sw-chat-header {
                 padding: 16px 18px;
                 border-radius: 18px;
                 margin: 6px 6px 0 6px;
             }
-
+            
             .sw-chat-header-title {
                 font-size: 20px;
             }
-
+            
             .new-chat-btn {
                 display: none;
             }
-
+            
+            /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
                 padding: 16px;
+                overflow-x: hidden; /* ADD: Prevent horizontal scroll */
+                -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
-
+            
             .sw-chat-input-area {
                 padding: 14px 16px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
-
+            
             .sw-chat-widget-bubble {
                 bottom: 16px;
                 right: 16px;
                 width: 56px;
                 height: 56px;
             }
+            
+            /* NEW: Fix input font size to prevent iOS zoom */
+            .sw-panel-chat-input,
+            .sw-bar-chat-input {
+                font-size: 16px !important;
+            }
+            
+            /* NEW: Fix main card height */
+            .sw-chat-main-card {
+                height: 100%;
+                overflow: hidden;
+            }
         }
-
+        
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
@@ -938,6 +967,8 @@
             this.scrollThreshold = 100;
             this.sessionId = this.generateUUID();
             this.streamingBuffer = { content: '', messageId: null };
+            this.userIsScrolling = false;
+            this.scrollTimeout = null;
             this.init();
         }
         
@@ -994,6 +1025,15 @@
             
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
+
+            // Detect user scrolling in chat
+            this.chatMessages.addEventListener('scroll', () => {
+                this.userIsScrolling = true;
+                clearTimeout(this.scrollTimeout);
+                this.scrollTimeout = setTimeout(() => {
+                    this.userIsScrolling = false;
+                }, 1000);  // User stopped scrolling after 1 second
+            });
         }
         
         expandBar() {
@@ -1154,11 +1194,16 @@
                 this.firstMessageSent = true;
             }
             
-            await this.sendMessage(message);
-            
-            this.panelChatInput.disabled = false;
-            this.panelSendBtn.disabled = false;
-            this.panelChatInput.focus();
+            try {
+                await this.sendMessage(message);
+            } catch (error) {
+                console.error('[Chatbot] Send from panel error:', error);
+            } finally {
+                // ALWAYS re-enable, even if there's an error
+                this.panelChatInput.disabled = false;
+                this.panelSendBtn.disabled = false;
+                this.panelChatInput.focus();
+            }
         }
         
         async sendMessage(content) {
@@ -1326,10 +1371,13 @@
             this.chatWidgetBubble.classList.add('chat-open');
             this.chatInputBar.classList.add('hidden');
             
+            // Prevent body scroll on mobile
+            document.body.classList.add('sw-chat-open');
+            
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) badge.style.display = 'none';
             
-            // Show date + quick questions on first open
+            // Show quick questions on first open (timestamp only appears after first Q&A pair)
             if (this.messageHistory.length === 0) {
                 this.renderQuickQuestions();
             }
@@ -1341,6 +1389,9 @@
             this.isPanelOpen = false;
             this.chatPanel.classList.remove('visible');
             this.chatWidgetBubble.classList.remove('chat-open');
+            
+            // Re-enable body scroll
+            document.body.classList.remove('sw-chat-open');
             
             if (!this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
@@ -1422,7 +1473,10 @@
                 const contentDiv = messageDiv.querySelector('.sw-message-content');
                 if (contentDiv) {
                     contentDiv.textContent = content;
-                    this.scrollToBottom();
+                    // Only scroll if user is already near bottom or not scrolling
+                    if (this.isNearBottom() && !this.userIsScrolling) {
+                        this.scrollToBottom();
+                    }
                 }
             }
         }
@@ -1469,7 +1523,18 @@
         }
         
         scrollToBottom() {
-            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            // Only auto-scroll if user isn't manually scrolling
+            if (!this.userIsScrolling) {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+        }
+        
+        // Check if user is at bottom of chat (within 100px)
+        isNearBottom() {
+            const threshold = 100;
+            const position = this.chatMessages.scrollTop + this.chatMessages.clientHeight;
+            const height = this.chatMessages.scrollHeight;
+            return position >= height - threshold;
         }
     }
     
