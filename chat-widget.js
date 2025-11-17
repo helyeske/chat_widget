@@ -11,7 +11,7 @@
     // CONFIGURATION
     // ========================================
     const DEFAULT_CONFIG = {
-        apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',
+        apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
         quickQuestions: [
             { text: "What programs do you offer?", emoji: "🎓" },
             { text: "How can I apply?", emoji: "📝" },
