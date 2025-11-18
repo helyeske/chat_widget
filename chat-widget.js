@@ -736,28 +736,44 @@
 
         /* LAYER 3b: Elevated Input Card at Bottom */
         .sw-chat-input-area {
-            padding: 14px 18px;
-            background: #ffffff;
+            padding: 8px 12px;
+            background: #e5e7eb;
             display: flex;
-            gap: 12px;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
             flex-shrink: 0;
             border-radius: 20px;
             margin: 0 8px 8px 8px;
-            box-shadow: 
+            box-shadow:
                 0 -2px 8px rgba(0, 0, 0, 0.04),
                 0 2px 8px rgba(0, 0, 0, 0.06);
             position: relative;
             z-index: 2;
         }
 
+        .sw-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 2px solid #f3f4f6;
+            transition: all 0.25s;
+            margin: 0;
+            outline: none;
+        }
+
+        .sw-input-wrapper:focus-within {
+            border-color: #A78BFA;
+        }
+
         .sw-panel-chat-input {
             flex: 1;
-            border: 2px solid #e5e7eb;
+            border: none;
             border-radius: 16px;
             outline: none;
-            background: #f9fafb;
-            padding: 12px 16px;
+            background: transparent;
+            padding: 12px 60px 12px 16px;
             font-size: 16px;
             font-family: inherit;
             color: #1f2937;
@@ -769,45 +785,97 @@
             resize: none;
         }
 
-        .sw-panel-chat-input:focus {
-            border-color: #9ca3af;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
-        }
-
         .sw-panel-chat-input::placeholder {
             color: #6b7280;
         }
 
+        .sw-panel-chat-input:focus-visible {
+            outline: none;
+        }
+
         .sw-panel-send-btn {
-            width: 44px;
-            height: 44px;
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: #d1d5db;
             border: none;
-            color: white;
+            color: #a1a1aa;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
             flex-shrink: 0;
+        }
+
+        .sw-panel-send-btn:not(:disabled) {
+            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            color: white;
             box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
         }
 
         .sw-panel-send-btn:hover:not(:disabled) {
-            transform: scale(1.08);
+            transform: translateY(-50%) scale(1.08);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
         }
 
         .sw-panel-send-btn:disabled {
-            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .sw-panel-send-btn svg {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Powered by Fylio Attribution */
+        .sw-powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0;
+            font-size: 11px;
+            color: #9ca3af;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-text {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .sw-powered-by-link {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .sw-powered-by-link:hover {
+            color: #8B5CF6;
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .sw-powered-by-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-brand {
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
         /* Mobile Responsive */
@@ -868,7 +936,7 @@
             }
             
             .sw-chat-input-area {
-                padding: 14px 16px;
+                padding: 8px 12px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
@@ -891,8 +959,19 @@
                 height: 100%;
                 overflow: hidden;
             }
+
+            /* Powered by mobile adjustments */
+            .sw-powered-by {
+                padding: 0;
+                font-size: 10px;
+            }
+
+            .sw-powered-by-icon {
+                width: 12px;
+                height: 12px;
+            }
         }
-        
+
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
@@ -1216,19 +1295,30 @@
                 
                 <!-- LAYER 3b: Elevated Input Card -->
                 <div class="sw-chat-input-area">
-                    <textarea
-                        id="sw-panel-chat-input"
-                        class="sw-panel-chat-input"
-                        rows="1"
-                        placeholder="Type a message..."
-                        autocomplete="off"
-                        aria-label="Type your message"
-                    ></textarea>
-                    <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </button>
+                    <div class="sw-input-wrapper">
+                        <textarea
+                            id="sw-panel-chat-input"
+                            class="sw-panel-chat-input"
+                            rows="1"
+                            placeholder="Type a message..."
+                            autocomplete="off"
+                            aria-label="Type your message"
+                        ></textarea>
+                        <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message" disabled>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Powered by Fylio Attribution -->
+                    <div class="sw-powered-by">
+                        <span class="sw-powered-by-text">Powered by</span>
+                        <a href="https://fylio.hu" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit Fylio website">
+                            <img src="./favicon.svg" alt="Fylio logo" class="sw-powered-by-icon" />
+                            <span class="sw-powered-by-brand">Fylio</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1579,6 +1669,9 @@
             });
             this.panelChatInput.addEventListener('input', () => {
                 this.autoResizeTextarea(this.panelChatInput);
+                // Enable/disable send button based on input
+                const hasText = this.panelChatInput.value.trim().length > 0;
+                this.panelSendBtn.disabled = !hasText;
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
@@ -1764,7 +1857,7 @@
             this.panelChatInput.value = '';
             this.autoResizeTextarea(this.panelChatInput); // Reset height
             this.panelChatInput.disabled = true;
-            this.panelSendBtn.disabled = true;
+            this.panelSendBtn.disabled = true; // Keep disabled while sending
 
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
