@@ -20,14 +20,82 @@
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 100
+        streamBatchIntervalMs: 200,
+        // Rich Content Feature Flags (OFF by default for safety)
+        enableRichContent: false,     // Master switch for all rich content features
+        enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
+        enableCards: false,            // Enable structured cards and carousels
+        fallbackToPlainText: true      // Fallback to plain text if libraries fail to load
     };
     
     // Merge with user config if provided
-    const CONFIG = typeof window.ChatbotConfig !== 'undefined' 
+    const CONFIG = typeof window.ChatbotConfig !== 'undefined'
         ? { ...DEFAULT_CONFIG, ...window.ChatbotConfig }
         : DEFAULT_CONFIG;
-    
+
+    // ========================================
+    // LIBRARY LOADING (for Rich Content)
+    // ========================================
+    let LIBRARIES_LOADED = {
+        marked: false,
+        DOMPurify: false
+    };
+
+    function loadLibraries() {
+        return new Promise((resolve) => {
+            // If rich content disabled, skip loading
+            if (!CONFIG.enableRichContent) {
+                console.log('[Chatbot] Rich content disabled, skipping library load');
+                resolve(false);
+                return;
+            }
+
+            let loadedCount = 0;
+            const totalLibraries = 2;
+
+            function checkComplete() {
+                loadedCount++;
+                if (loadedCount === totalLibraries) {
+                    const allLoaded = LIBRARIES_LOADED.marked && LIBRARIES_LOADED.DOMPurify;
+                    console.log('[Chatbot] Libraries loaded:', allLoaded ? 'success' : 'failed');
+                    resolve(allLoaded);
+                }
+            }
+
+            // Load marked.js (markdown parser)
+            const markedScript = document.createElement('script');
+            markedScript.src = 'https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js';
+            markedScript.onload = () => {
+                LIBRARIES_LOADED.marked = typeof window.marked !== 'undefined';
+                if (LIBRARIES_LOADED.marked) {
+                    console.log('[Chatbot] marked.js loaded successfully');
+                }
+                checkComplete();
+            };
+            markedScript.onerror = () => {
+                console.warn('[Chatbot] Failed to load marked.js - markdown rendering will be disabled');
+                checkComplete();
+            };
+            document.head.appendChild(markedScript);
+
+            // Load DOMPurify (HTML sanitization)
+            const purifyScript = document.createElement('script');
+            purifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js';
+            purifyScript.onload = () => {
+                LIBRARIES_LOADED.DOMPurify = typeof window.DOMPurify !== 'undefined';
+                if (LIBRARIES_LOADED.DOMPurify) {
+                    console.log('[Chatbot] DOMPurify loaded successfully');
+                }
+                checkComplete();
+            };
+            purifyScript.onerror = () => {
+                console.warn('[Chatbot] Failed to load DOMPurify - HTML sanitization will be disabled');
+                checkComplete();
+            };
+            document.head.appendChild(purifyScript);
+        });
+    }
+
     // ========================================
     // CSS INJECTION
     // ========================================
@@ -142,12 +210,13 @@
             outline: none;
             background: transparent;
             font-size: 14px;
+            line-height: 1.2;
             color: #374151;
             padding: 4px 4px;
         }
 
-        .sw-bar-chat-input::placeholder {
-            color: #6b7280;
+        .sw-bar-chat-input:focus-visible {
+            outline: none;
         }
 
         .sw-bar-icon-btn {
@@ -163,6 +232,7 @@
             justify-content: center;
             transition: all 0.25s;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
         .sw-bar-icon-btn.send-btn {
@@ -266,7 +336,7 @@
             opacity: 0;
             transform: scale(0.92) translateY(30px);
             pointer-events: none;
-            transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
             z-index: 10000;
             padding: 8px;
             gap: 8px;
@@ -294,7 +364,7 @@
 
         /* LAYER 3a: Elevated Purple Header Card */
         .sw-chat-header {
-            padding: 18px 20px;
+            padding: 20px;
             background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
             color: white;
             display: flex;
@@ -373,10 +443,11 @@
         .sw-chat-messages {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 14px;
         }
 
         .sw-chat-messages::-webkit-scrollbar {
@@ -540,7 +611,7 @@
             display: flex;
             flex-direction: column;
             max-width: 85%;
-            animation: sw-messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: sw-messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         @keyframes sw-messageSlideIn {
@@ -583,18 +654,23 @@
         }
 
         .sw-message-content {
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-radius: 20px;
-            font-size: 15px;
-            line-height: 1.6;
+            font-size: 16px;
+            line-height: 1.45;
+            letter-spacing: -0.011em;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .sw-bot-message .sw-message-content {
-            background: #f9fafb;
+            background: #F0F0F0;
             color: #1f2937;
-            border-bottom-left-radius: 6px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .sw-bot-message .sw-message-content ul {
@@ -620,8 +696,7 @@
         .sw-user-message .sw-message-content {
             background: linear-gradient(135deg, #8B5CF6, #A78BFA);
             color: white;
-            border-bottom-right-radius: 6px;
-            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
         }
 
         /* Typing Indicator */
@@ -683,16 +758,21 @@
             outline: none;
             background: #f9fafb;
             padding: 12px 16px;
-            font-size: 15px;
+            font-size: 16px;
             font-family: inherit;
             color: #1f2937;
             transition: all 0.25s;
+            min-height: 44px;
+            max-height: 150px;
+            line-height: 1.5;
+            overflow-y: hidden;
+            resize: none;
         }
 
         .sw-panel-chat-input:focus {
-            border-color: #8B5CF6;
+            border-color: #9ca3af;
             background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
         }
 
         .sw-panel-chat-input::placeholder {
@@ -732,16 +812,26 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
+            /* Fix body scroll on mobile */
+            body.sw-chat-open {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                touch-action: none;
+            }
+            
             .sw-chat-input-bar {
+                display: none !important;
                 width: calc(100% - 40px);
                 max-width: 320px;
             }
-
+            
             .sw-chat-input-bar.expanded {
                 width: calc(100% - 40px);
                 max-width: 360px;
             }
-
+            
+            /* MODIFIED: Fix panel height and overflow */
             .sw-chat-panel {
                 top: 0;
                 right: 0;
@@ -749,46 +839,323 @@
                 bottom: 0;
                 width: 100%;
                 height: 100vh;
+                height: 100dvh; /* ADD: Dynamic viewport height */
                 border-radius: 0;
                 padding: 8px;
                 gap: 8px;
+                overflow: hidden; /* ADD: Prevent scroll on panel */
             }
-
+            
             .sw-chat-header {
-                padding: 16px 18px;
+                padding: 18px;
                 border-radius: 18px;
                 margin: 6px 6px 0 6px;
             }
-
+            
             .sw-chat-header-title {
                 font-size: 20px;
             }
-
+            
             .new-chat-btn {
                 display: none;
             }
-
+            
+            /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
                 padding: 16px;
+                overflow-x: hidden; /* ADD: Prevent horizontal scroll */
+                -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
-
+            
             .sw-chat-input-area {
                 padding: 14px 16px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
-
+            
             .sw-chat-widget-bubble {
                 bottom: 16px;
                 right: 16px;
                 width: 56px;
                 height: 56px;
             }
+            
+            /* NEW: Fix input font size to prevent iOS zoom */
+            .sw-panel-chat-input,
+            .sw-bar-chat-input {
+                font-size: 16px !important;
+            }
+            
+            /* NEW: Fix main card height */
+            .sw-chat-main-card {
+                height: 100%;
+                overflow: hidden;
+            }
         }
-
+        
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
+            }
+        }
+
+        /* Accessibility: Focus Indicators */
+        *:focus-visible {
+            outline: 3px solid #8B5CF6;
+            outline-offset: 2px;
+        }
+
+        .sw-quick-question-btn:focus-visible {
+            outline: 3px solid #8B5CF6;
+            outline-offset: 3px;
+        }
+
+        .sw-panel-send-btn:focus-visible,
+        .sw-header-icon-btn:focus-visible,
+        .sw-bar-icon-btn:focus-visible {
+            outline: 3px solid white;
+            outline-offset: 2px;
+        }
+
+        .sw-chat-widget-bubble:focus-visible {
+            outline: 4px solid #8B5CF6;
+            outline-offset: 4px;
+        }
+
+        /* Accessibility: Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ========================================
+           RICH CONTENT STYLES (Markdown & Cards)
+           ======================================== */
+
+        /* Markdown Content Styling */
+        .sw-message-content.markdown h1,
+        .sw-message-content.markdown h2,
+        .sw-message-content.markdown h3 {
+            margin: 12px 0 8px 0;
+            color: #1f2937;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .sw-message-content.markdown h1 { font-size: 20px; }
+        .sw-message-content.markdown h2 { font-size: 18px; }
+        .sw-message-content.markdown h3 { font-size: 16px; }
+
+        .sw-message-content.markdown p {
+            margin: 8px 0;
+        }
+
+        .sw-message-content.markdown a {
+            color: #8B5CF6;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .sw-message-content.markdown a:hover {
+            border-bottom-color: #8B5CF6;
+        }
+
+        .sw-message-content.markdown code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #ef4444;
+        }
+
+        .sw-message-content.markdown pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .sw-message-content.markdown pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 13px;
+        }
+
+        .sw-message-content.markdown blockquote {
+            border-left: 4px solid #8B5CF6;
+            padding-left: 12px;
+            margin: 10px 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        /* Card Container */
+        .sw-card-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0;
+        }
+
+        /* Single Card */
+        .sw-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sw-bot-message .sw-card {
+            background: white;
+            border: 1px solid #ede9fe;
+        }
+
+        .sw-card:hover {
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Card Image */
+        .sw-card-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #f3f4f6;
+        }
+
+        .sw-card-image.loading {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: sw-shimmer 1.5s infinite;
+        }
+
+        @keyframes sw-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Card Content */
+        .sw-card-content {
+            padding: 14px;
+        }
+
+        .sw-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 6px 0;
+            line-height: 1.3;
+        }
+
+        .sw-card-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0 0 10px 0;
+        }
+
+        .sw-card-metadata {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+
+        /* Card Actions */
+        .sw-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .sw-card-button {
+            flex: 1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+
+        .sw-card-button.primary {
+            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            color: white;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+        }
+
+        .sw-card-button.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);
+        }
+
+        .sw-card-button.secondary {
+            background: white;
+            color: #8B5CF6;
+            border: 1.5px solid #e5e7eb;
+        }
+
+        .sw-card-button.secondary:hover {
+            background: #f9fafb;
+            border-color: #8B5CF6;
+        }
+
+        /* Carousel for Multiple Cards */
+        .sw-card-carousel {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .sw-card-carousel .sw-card {
+            min-width: 280px;
+            max-width: 280px;
+            scroll-snap-align: start;
+        }
+
+        /* Mobile Responsive Cards */
+        @media (max-width: 768px) {
+            .sw-card-image {
+                height: 140px;
+            }
+
+            .sw-card-carousel .sw-card {
+                min-width: 240px;
+                max-width: 240px;
             }
         }
     `;
@@ -849,14 +1216,14 @@
                 
                 <!-- LAYER 3b: Elevated Input Card -->
                 <div class="sw-chat-input-area">
-                    <input 
-                        type="text" 
-                        id="sw-panel-chat-input" 
+                    <textarea
+                        id="sw-panel-chat-input"
                         class="sw-panel-chat-input"
+                        rows="1"
                         placeholder="Type a message..."
                         autocomplete="off"
                         aria-label="Type your message"
-                    />
+                    ></textarea>
                     <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -938,6 +1305,8 @@
             this.scrollThreshold = 100;
             this.sessionId = this.generateUUID();
             this.streamingBuffer = { content: '', messageId: null };
+            this.userIsScrolling = false;
+            this.scrollTimeout = null;
             this.init();
         }
         
@@ -948,7 +1317,226 @@
                 return v.toString(16);
             });
         }
-        
+
+        // ========================================
+        // RICH CONTENT RENDERING FUNCTIONS
+        // ========================================
+
+        detectMessageType(data) {
+            // Backwards compatible: plain string = text
+            if (typeof data === 'string') {
+                return { type: 'text', content: data };
+            }
+
+            // Object with type field
+            if (data && typeof data === 'object') {
+                // Explicit type specified
+                if (data.type) {
+                    return data;
+                }
+
+                // Auto-detect card structure
+                if (data.title || data.image || data.buttons) {
+                    return { type: 'card', ...data };
+                }
+
+                // Auto-detect multiple items (carousel)
+                if (Array.isArray(data.items)) {
+                    return { type: 'carousel', items: data.items };
+                }
+
+                // Default to text if has content field
+                if (data.content) {
+                    return { type: 'text', content: data.content };
+                }
+            }
+
+            // Fallback: treat as plain text
+            return { type: 'text', content: String(data) };
+        }
+
+        hasMarkdownSyntax(text) {
+            // Quick heuristic to detect if text contains markdown
+            const markdownPatterns = [
+                /^#+\s/m,          // Headers
+                /\*\*.*\*\*/,      // Bold
+                /\*.*\*/,          // Italic
+                /\[.*\]\(.*\)/,    // Links
+                /`.*`/,            // Code
+                /^[-*+]\s/m,       // Lists
+                /^>\s/m            // Blockquotes
+            ];
+
+            return markdownPatterns.some(pattern => pattern.test(text));
+        }
+
+        escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        renderMarkdown(content) {
+            // Feature check
+            if (!CONFIG.enableMarkdown || !LIBRARIES_LOADED.marked || !LIBRARIES_LOADED.DOMPurify) {
+                // Fallback to plain text
+                return this.escapeHtml(content);
+            }
+
+            try {
+                // Configure marked
+                window.marked.setOptions({
+                    breaks: true,        // Convert \n to <br>
+                    gfm: true,          // GitHub Flavored Markdown
+                    headerIds: false,   // Don't add IDs to headers
+                    mangle: false       // Don't escape emails
+                });
+
+                // Render markdown
+                const rawHtml = window.marked.parse(content);
+
+                // Sanitize with DOMPurify
+                const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
+                                  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
+                                  'code', 'pre', 'hr'],
+                    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                    ALLOW_DATA_ATTR: false
+                });
+
+                return cleanHtml;
+            } catch (error) {
+                console.error('[Chatbot] Markdown rendering failed:', error);
+                return this.escapeHtml(content);
+            }
+        }
+
+        renderCard(cardData) {
+            if (!CONFIG.enableCards) {
+                // Fallback: render as text
+                const text = `${cardData.title || ''}\n${cardData.description || ''}`;
+                return this.escapeHtml(text);
+            }
+
+            try {
+                const card = document.createElement('div');
+                card.className = 'sw-card';
+
+                // Image (if provided)
+                if (cardData.image) {
+                    const img = document.createElement('img');
+                    img.className = 'sw-card-image loading';
+                    img.src = cardData.image;
+                    img.alt = cardData.title || 'Card image';
+                    img.loading = 'lazy';
+
+                    img.onload = () => img.classList.remove('loading');
+                    img.onerror = () => {
+                        img.style.display = 'none';
+                        console.warn('[Chatbot] Card image failed to load:', cardData.image);
+                    };
+
+                    card.appendChild(img);
+                }
+
+                // Content area
+                const content = document.createElement('div');
+                content.className = 'sw-card-content';
+
+                // Title
+                if (cardData.title) {
+                    const title = document.createElement('div');
+                    title.className = 'sw-card-title';
+                    title.textContent = cardData.title;
+                    content.appendChild(title);
+                }
+
+                // Description
+                if (cardData.description) {
+                    const desc = document.createElement('div');
+                    desc.className = 'sw-card-description';
+                    desc.textContent = cardData.description;
+                    content.appendChild(desc);
+                }
+
+                // Metadata (optional)
+                if (cardData.metadata && Array.isArray(cardData.metadata)) {
+                    const metadata = document.createElement('div');
+                    metadata.className = 'sw-card-metadata';
+
+                    cardData.metadata.forEach(item => {
+                        const metaItem = document.createElement('span');
+                        metaItem.textContent = item;
+                        metadata.appendChild(metaItem);
+                    });
+
+                    content.appendChild(metadata);
+                }
+
+                // Buttons/Actions
+                if (cardData.buttons && Array.isArray(cardData.buttons)) {
+                    const actions = document.createElement('div');
+                    actions.className = 'sw-card-actions';
+
+                    cardData.buttons.forEach((btn, index) => {
+                        const button = document.createElement('button');
+                        button.className = `sw-card-button ${index === 0 ? 'primary' : 'secondary'}`;
+                        button.textContent = btn.label || btn.text;
+
+                        button.onclick = () => {
+                            if (btn.url) {
+                                window.open(btn.url, '_blank', 'noopener,noreferrer');
+                            } else if (btn.action === 'send') {
+                                this.sendMessage(btn.value || btn.label);
+                            }
+                        };
+
+                        actions.appendChild(button);
+                    });
+
+                    content.appendChild(actions);
+                }
+
+                card.appendChild(content);
+                return card.outerHTML;
+            } catch (error) {
+                console.error('[Chatbot] Card rendering failed:', error);
+                const text = `${cardData.title || ''}\n${cardData.description || ''}`;
+                return this.escapeHtml(text);
+            }
+        }
+
+        renderCarousel(items) {
+            if (!CONFIG.enableCards || !Array.isArray(items)) {
+                return this.escapeHtml('Multiple items available');
+            }
+
+            try {
+                const carousel = document.createElement('div');
+                carousel.className = 'sw-card-carousel';
+
+                items.forEach(item => {
+                    const cardHtml = this.renderCard(item);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = cardHtml;
+                    const cardElement = tempDiv.firstChild;
+                    if (cardElement) {
+                        carousel.appendChild(cardElement);
+                    }
+                });
+
+                return carousel.outerHTML;
+            } catch (error) {
+                console.error('[Chatbot] Carousel rendering failed:', error);
+                return this.escapeHtml(`${items.length} items available`);
+            }
+        }
+
         init() {
             // Get DOM elements
             this.chatInputBar = document.getElementById('sw-chat-input-bar');
@@ -982,11 +1570,15 @@
             this.chatWidgetBubble.addEventListener('click', () => this.openPanel());
             
             // Bind events for panel
-            this.panelChatInput.addEventListener('keypress', (e) => {
+            this.panelChatInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     this.sendFromPanel();
                 }
+                // Shift+Enter allows new line (default behavior)
+            });
+            this.panelChatInput.addEventListener('input', () => {
+                this.autoResizeTextarea(this.panelChatInput);
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
@@ -994,21 +1586,45 @@
             
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
+
+            // Detect user scrolling in chat
+            this.chatMessages.addEventListener('scroll', () => {
+                this.userIsScrolling = true;
+                clearTimeout(this.scrollTimeout);
+                this.scrollTimeout = setTimeout(() => {
+                    this.userIsScrolling = false;
+                }, 1000);  // User stopped scrolling after 1 second
+            });
+
+            // Keyboard shortcuts for accessibility
+            document.addEventListener('keydown', (e) => {
+                // Escape to close panel
+                if (e.key === 'Escape' && this.isPanelOpen) {
+                    e.preventDefault();
+                    this.closePanel();
+                }
+
+                // Cmd/Ctrl + K to open chat
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k' && !this.isPanelOpen) {
+                    e.preventDefault();
+                    this.openPanel();
+                }
+            });
         }
-        
+
         expandBar() {
             if (!this.isBarDismissed && !this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.add('expanded');
-                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 450);
+                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 300);
             }
         }
-        
+
         contractBar() {
             if (this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.remove('expanded');
-                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 450);
+                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 300);
             }
         }
         
@@ -1144,21 +1760,27 @@
         async sendFromPanel() {
             const message = this.panelChatInput.value.trim();
             if (!message) return;
-            
+
             this.panelChatInput.value = '';
+            this.autoResizeTextarea(this.panelChatInput); // Reset height
             this.panelChatInput.disabled = true;
             this.panelSendBtn.disabled = true;
-            
+
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
-            
-            await this.sendMessage(message);
-            
-            this.panelChatInput.disabled = false;
-            this.panelSendBtn.disabled = false;
-            this.panelChatInput.focus();
+
+            try {
+                await this.sendMessage(message);
+            } catch (error) {
+                console.error('[Chatbot] Send from panel error:', error);
+            } finally {
+                // ALWAYS re-enable, even if there's an error
+                this.panelChatInput.disabled = false;
+                this.panelSendBtn.disabled = false;
+                this.panelChatInput.focus();
+            }
         }
         
         async sendMessage(content) {
@@ -1186,14 +1808,21 @@
                 );
                 
                 console.log('[Chatbot] Webhook response status:', response.status);
-                
-                // Process SSE streaming response
-                await this.processStreamingResponse(response, botMessageId);
-                
+
+                // Process SSE streaming response with timeout protection
+                const streamTimeout = 30000; // 30 seconds
+                const streamPromise = this.processStreamingResponse(response, botMessageId);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Stream timeout after 30 seconds')), streamTimeout)
+                );
+
+                await Promise.race([streamPromise, timeoutPromise]);
+
             } catch (error) {
                 console.error('[Chatbot] Error sending message:', error);
                 this.updateMessage(botMessageId, CONFIG.fallbackResponse);
             } finally {
+                // Defensive: Also hide here in case processStreamingResponse errors before its finally
                 this.hideTypingIndicator(botMessageId);
             }
         }
@@ -1270,17 +1899,27 @@
                                     this.hideTypingIndicator(messageId);
                                     firstChunkReceived = true;
                                 }
-                                
+
                                 let chunkContent = '';
-                                
-                                // Check if content is JSON with output field
+
+                                // Check if content is JSON with output field or structured data
                                 if (typeof item.content === 'string' && item.content.startsWith('{')) {
                                     try {
                                         const contentObj = JSON.parse(item.content);
+
+                                        // Final output object
                                         if (contentObj.output) {
-                                            // Final output - update buffer immediately
                                             this.streamingBuffer.content = contentObj.output;
                                             console.log('[Chatbot] Found final output:', contentObj.output);
+                                            continue;
+                                        }
+
+                                        // NEW: Card or structured data (complete object)
+                                        if (contentObj.type === 'card' || contentObj.type === 'carousel' || contentObj.title) {
+                                            // Don't stream cards - wait for complete object
+                                            this.streamingBuffer.content = contentObj;
+                                            this.streamingBuffer.isStructured = true;
+                                            console.log('[Chatbot] Received structured content:', contentObj.type || 'card');
                                             continue;
                                         }
                                     } catch {
@@ -1289,9 +1928,9 @@
                                 } else {
                                     chunkContent = item.content;
                                 }
-                                
-                                // Add chunk to buffer (no state update here)
-                                if (chunkContent) {
+
+                                // Add chunk to buffer (only for text streaming, not structured data)
+                                if (chunkContent && !this.streamingBuffer.isStructured) {
                                     this.streamingBuffer.content += chunkContent;
                                     console.log('[Chatbot] Buffered chunk:', chunkContent);
                                 }
@@ -1302,22 +1941,33 @@
                     }
                 }
             } finally {
+                // CRITICAL: Always release the reader to prevent hanging
+                try {
+                    reader.releaseLock();
+                } catch (e) {
+                    console.warn('[Chatbot] Reader release failed:', e);
+                }
+
                 // Stop batch updates
                 clearInterval(batchInterval);
-                
+
+                // CRITICAL FIX: Hide typing indicator BEFORE final flush
+                this.hideTypingIndicator(messageId);
+
                 // Final flush
                 if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
                     const finalContent = this.streamingBuffer.content;
                     const msgId = this.streamingBuffer.messageId;
                     this.updateMessage(msgId, finalContent);
+                } else {
+                    // Check if we got any content
+                    console.error('[Chatbot] No content extracted from stream');
+                    this.updateMessage(messageId, '⚠️ No content received from stream');
                 }
             }
-            
-            // Check if we got any content
-            if (!this.streamingBuffer.content) {
-                console.error('[Chatbot] No content extracted from stream');
-                this.updateMessage(messageId, '⚠️ No content received from stream');
-            }
+
+            // CRITICAL: Explicitly return resolved Promise to signal completion
+            return Promise.resolve();
         }
         
         openPanel() {
@@ -1326,10 +1976,13 @@
             this.chatWidgetBubble.classList.add('chat-open');
             this.chatInputBar.classList.add('hidden');
             
+            // Prevent body scroll on mobile
+            document.body.classList.add('sw-chat-open');
+            
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) badge.style.display = 'none';
             
-            // Show date + quick questions on first open
+            // Show quick questions on first open (timestamp only appears after first Q&A pair)
             if (this.messageHistory.length === 0) {
                 this.renderQuickQuestions();
             }
@@ -1341,6 +1994,9 @@
             this.isPanelOpen = false;
             this.chatPanel.classList.remove('visible');
             this.chatWidgetBubble.classList.remove('chat-open');
+            
+            // Re-enable body scroll
+            document.body.classList.remove('sw-chat-open');
             
             if (!this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
@@ -1418,12 +2074,64 @@
         
         updateMessage(messageId, content) {
             const messageDiv = document.getElementById(messageId);
-            if (messageDiv) {
-                const contentDiv = messageDiv.querySelector('.sw-message-content');
-                if (contentDiv) {
-                    contentDiv.textContent = content;
+            if (!messageDiv) return;
+
+            const contentDiv = messageDiv.querySelector('.sw-message-content');
+            if (!contentDiv) return;
+
+            // BACKWARDS COMPATIBLE PATH: Feature flag check
+            if (!CONFIG.enableRichContent) {
+                // Use existing behavior (plain text only)
+                contentDiv.textContent = content;
+                if (this.isNearBottom() && !this.userIsScrolling) {
                     this.scrollToBottom();
                 }
+                return;
+            }
+
+            // NEW PATH: Rich content rendering
+            try {
+                const messageData = this.detectMessageType(content);
+
+                switch (messageData.type) {
+                    case 'text':
+                        // Check if markdown is enabled and content has markdown syntax
+                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
+                            const html = this.renderMarkdown(messageData.content);
+                            contentDiv.innerHTML = html;
+                            contentDiv.classList.add('markdown');
+                        } else {
+                            // Plain text (safe, uses textContent)
+                            contentDiv.textContent = messageData.content;
+                        }
+                        break;
+
+                    case 'card':
+                        const cardHtml = this.renderCard(messageData);
+                        contentDiv.innerHTML = cardHtml;
+                        contentDiv.classList.add('card-container');
+                        break;
+
+                    case 'carousel':
+                        const carouselHtml = this.renderCarousel(messageData.items);
+                        contentDiv.innerHTML = carouselHtml;
+                        contentDiv.classList.add('card-container');
+                        break;
+
+                    default:
+                        // Unknown type: fallback to text
+                        console.warn('[Chatbot] Unknown message type:', messageData.type);
+                        contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
+                }
+
+                // Scroll behavior (unchanged)
+                if (this.isNearBottom() && !this.userIsScrolling) {
+                    this.scrollToBottom();
+                }
+            } catch (error) {
+                console.error('[Chatbot] updateMessage rendering error:', error);
+                // Emergency fallback: show as plain text
+                contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
             }
         }
         
@@ -1469,7 +2177,32 @@
         }
         
         scrollToBottom() {
-            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            // Only auto-scroll if user isn't manually scrolling
+            if (!this.userIsScrolling) {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+        }
+        
+        // Check if user is at bottom of chat (within 100px)
+        isNearBottom() {
+            const threshold = 100;
+            const position = this.chatMessages.scrollTop + this.chatMessages.clientHeight;
+            const height = this.chatMessages.scrollHeight;
+            return position >= height - threshold;
+        }
+
+        // Auto-resize textarea as user types
+        autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 150);
+            textarea.style.height = newHeight + 'px';
+
+            // Only show scrollbar when content exceeds max-height
+            if (textarea.scrollHeight > 150) {
+                textarea.style.overflowY = 'auto';
+            } else {
+                textarea.style.overflowY = 'hidden';
+            }
         }
     }
     
@@ -1492,19 +2225,30 @@
         document.body.appendChild(container);
     }
     
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                injectStyles();
-                injectHTML();
-                window.SemmelweisChatWidget = new ChatWidget();
-                console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
-            });
-        } else {
+    async function init() {
+        const initialize = async () => {
             injectStyles();
             injectHTML();
+
+            // Load libraries if rich content enabled
+            if (CONFIG.enableRichContent) {
+                console.log('[Chatbot] Loading rich content libraries...');
+                await loadLibraries();
+            }
+
             window.SemmelweisChatWidget = new ChatWidget();
             console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
+            console.log('[Chatbot] Rich content:', CONFIG.enableRichContent ? 'enabled' : 'disabled');
+            if (CONFIG.enableRichContent) {
+                console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
+                console.log('[Chatbot] Cards:', CONFIG.enableCards ? 'enabled' : 'disabled');
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            await initialize();
         }
     }
     

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Semmelweis University Chatbot Widget Demo</title>
     <style>
         * {
@@ -202,7 +202,10 @@
                 { text: "What programs do you offer?", emoji: "🎓" },
                 { text: "How can I apply?", emoji: "📝" },
                 { text: "Tell me about tuition fees", emoji: "💰" }
-            ]
+            ],
+            enableRichContent: false,
+            enableMarkdown: true,
+            enableCards: false
         };
     </script>
     
@@ -211,5 +214,6 @@
 </body>
 
 </html>
+
 
 
