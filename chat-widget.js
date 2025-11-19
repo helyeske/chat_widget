@@ -53,7 +53,7 @@
         branding: {
             botName: 'Zsanett AI',
             botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
-            widgetIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M19 22.5a4.75 4.75 0 0 1 3.5 -3.5a4.75 4.75 0 0 1 -3.5 -3.5a4.75 4.75 0 0 1 -3.5 3.5a4.75 4.75 0 0 1 3.5 3.5" /><path d="M20 11.5v-2.5a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h7" /></svg>',  // Widget bubble icon only
+            widgetIcon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><g clip-path="url(#clip0_98_22)"><path d="M8 9H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20L7.5 18H6C5.20435 18 4.44129 17.6839 3.87868 17.1213C3.31607 16.5587 3 15.7956 3 15V7C3 6.20435 3.31607 5.44129 3.87868 4.87868C4.44129 4.31607 5.20435 4 6 4H18C18.7956 4 19.5587 4.31607 20.1213 4.87868C20.6839 5.44129 21 6.20435 21 7V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V18C14 17.4696 14.2107 16.9609 14.5858 16.5858C14.9609 16.2107 15.4696 16 16 16C16.5304 16 17.0391 16.2107 17.4142 16.5858C17.7893 16.9609 18 17.4696 18 18V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 20H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="clip0_98_22"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
             colors: {
                 primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
             }
@@ -236,7 +236,7 @@
         /* Compact Chat Input Bar */
         .sw-chat-input-bar {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%) scale(1);
             background: white;
@@ -415,6 +415,11 @@
             pointer-events: none;
         }
 
+        .sw-chat-widget-bubble svg {
+            width: 40px;
+            height: 40px;
+        }
+
         /* Notification Badge */
         .sw-bubble-badge {
             position: absolute;
@@ -486,7 +491,7 @@
 
         /* LAYER 3a: Elevated Purple Header Card */
         .sw-chat-header {
-            padding: 20px;
+            padding: 16px 20px;
             background: var(--sw-header-bg);
             color: white;
             display: flex;
@@ -505,24 +510,24 @@
         .sw-chat-header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .sw-chat-logo {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .sw-chat-header-title {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.02em;
@@ -539,14 +544,14 @@
             backdrop-filter: blur(10px);
             border: none;
             color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 18px;
             transition: all 0.2s;
             font-weight: 400;
         }
@@ -554,11 +559,6 @@
         .sw-header-icon-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
-        }
-
-        .sw-header-icon-btn.new-chat-btn {
-            font-size: 24px;
-            font-weight: 300;
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -919,8 +919,8 @@
             right: 6px;
             top: 50%;
             transform: translateY(-50%);
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: var(--sw-button-disabled);
             border: none;
@@ -949,8 +949,8 @@
         }
 
         .sw-panel-send-btn svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
         /* Powered by Fylio Attribution */
@@ -1036,19 +1036,27 @@
             }
             
             .sw-chat-header {
-                padding: 18px;
+                padding: 14px 18px;
                 border-radius: 18px;
                 margin: 6px 6px 0 6px;
             }
-            
+
             .sw-chat-header-title {
-                font-size: 20px;
+                font-size: 18px;
             }
-            
-            .new-chat-btn {
-                display: none;
+
+            .sw-chat-logo {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
             }
-            
+
+            .sw-header-icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
                 padding: 16px;
@@ -1068,7 +1076,12 @@
                 width: 56px;
                 height: 56px;
             }
-            
+
+            .sw-chat-widget-bubble svg {
+                width: 36px;
+                height: 36px;
+            }
+
             /* NEW: Fix input font size to prevent iOS zoom */
             .sw-panel-chat-input,
             .sw-bar-chat-input {
@@ -1393,7 +1406,7 @@
             />
             <button class="sw-bar-icon-btn send-btn" id="sw-bar-send-btn" title="Send message" aria-label="Send message">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
                 </svg>
             </button>
             <button class="sw-bar-icon-btn close-btn" id="sw-bar-close-btn" title="Dismiss chat bar" aria-label="Dismiss chat bar">
@@ -1420,7 +1433,6 @@
                         <h3 class="sw-chat-header-title">${CONFIG.branding.botName}</h3>
                     </div>
                     <div class="sw-chat-header-right">
-                        <button id="sw-new-chat-btn" class="sw-header-icon-btn new-chat-btn" title="Start new chat" aria-label="Start new chat">+</button>
                         <button id="sw-panel-close-btn" class="sw-header-icon-btn close-btn" title="Close chat" aria-label="Close chat">×</button>
                     </div>
                 </div>
@@ -1443,7 +1455,7 @@
                         ></textarea>
                         <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message" disabled>
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
                             </svg>
                         </button>
                     </div>
@@ -1771,8 +1783,7 @@ ${poweredByHTML}
             this.panelChatInput = document.getElementById('sw-panel-chat-input');
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
-            this.newChatBtn = document.getElementById('sw-new-chat-btn');
-            
+
             // Bind events for bar
             this.barChatInput.addEventListener('focus', () => this.expandBar());
             this.barChatInput.addEventListener('blur', () => this.contractBar());
@@ -1805,8 +1816,7 @@ ${poweredByHTML}
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
-            this.newChatBtn.addEventListener('click', () => this.startNewChat());
-            
+
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
@@ -1977,7 +1987,6 @@ ${poweredByHTML}
             this.chatMessages.innerHTML = '';
             this.firstMessageSent = false;
             this.sessionId = this.generateUUID();
-            this.addDateSeparator();
             this.renderQuickQuestions();
         }
         
