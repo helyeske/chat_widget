@@ -481,6 +481,7 @@
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            gap: 8px;
         }
 
         /* LAYER 3a: Elevated Purple Header Card */
@@ -856,7 +857,7 @@
 
         /* LAYER 3b: Elevated Input Card at Bottom */
         .sw-chat-input-area {
-            padding: 8px 12px;
+            padding: 8px;
             background: var(--sw-input-area-bg);
             display: flex;
             flex-direction: column;
@@ -877,7 +878,7 @@
             align-items: center;
             background: var(--sw-input-field-bg);
             border-radius: 16px;
-            border: 2px solid var(--sw-input-border);
+            border: 2px solid transparent;
             transition: all 0.25s;
             margin: 0;
             outline: none;
@@ -944,7 +945,7 @@
         }
 
         .sw-panel-send-btn:disabled {
-            cursor: not-allowed;
+            cursor: default;
         }
 
         .sw-panel-send-btn svg {
@@ -1056,7 +1057,7 @@
             }
             
             .sw-chat-input-area {
-                padding: 8px 12px;
+                padding: 8px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
