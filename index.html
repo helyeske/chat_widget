@@ -196,6 +196,47 @@
 
     <!-- Widget Configuration -->
     <script>
+        // SIMPLIFIED SAAS CONFIGURATION - Just the essentials!
+        window.ChatbotConfig = {
+            // API Configuration
+            apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
+
+            // Branding
+            branding: {
+                botName: 'Zsanett AI',
+                botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
+                widgetIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M19 22.5a4.75 4.75 0 0 1 3.5 -3.5a4.75 4.75 0 0 1 -3.5 -3.5a4.75 4.75 0 0 1 -3.5 3.5a4.75 4.75 0 0 1 3.5 3.5" /><path d="M20 11.5v-2.5a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h7" /></svg>',  // Widget bubble icon only
+                colors: {
+                    primary: '#8B5CF6'  // Your brand color - that's it! Applies to header, buttons, accents, user messages
+                }
+            },
+
+            // Content Customization
+            content: {
+                barPlaceholder: 'Got any questions?',
+                panelPlaceholder: 'Type a message...',
+                quickQuestions: [
+                    { text: "What programs do you offer?", emoji: "🎓" },
+                    { text: "How can I apply?", emoji: "📝" },
+                    { text: "Tell me about tuition fees", emoji: "💰" }
+                ],
+                quickQuestionsHeader: 'Frequently Asked Questions',
+                quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg>'
+            },
+
+            // Powered By Attribution
+            poweredBy: {
+                enabled: true
+            },
+
+            // Rich Content Features
+            enableRichContent: false,
+            enableMarkdown: true,
+            enableCards: false
+        };
+
+        /*
+        // BACKWARD COMPATIBLE: Old flat configuration still works!
         window.ChatbotConfig = {
             apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
             quickQuestions: [
@@ -207,6 +248,7 @@
             enableMarkdown: true,
             enableCards: false
         };
+        */
     </script>
     
     <!-- Widget Script -->
