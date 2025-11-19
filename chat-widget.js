@@ -10,28 +10,108 @@
     // ========================================
     // CONFIGURATION
     // ========================================
+
+    /**
+     * Deep merge utility function for nested configuration objects
+     * @param {Object} target - The target object
+     * @param {Object} source - The source object to merge into target
+     * @returns {Object} - The merged object
+     */
+    function deepMerge(target, source) {
+        const output = { ...target };
+
+        if (isObject(target) && isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (isObject(source[key])) {
+                    if (!(key in target)) {
+                        Object.assign(output, { [key]: source[key] });
+                    } else {
+                        output[key] = deepMerge(target[key], source[key]);
+                    }
+                } else {
+                    Object.assign(output, { [key]: source[key] });
+                }
+            });
+        }
+
+        return output;
+    }
+
+    function isObject(item) {
+        return item && typeof item === 'object' && !Array.isArray(item);
+    }
+
     const DEFAULT_CONFIG = {
+        // API Configuration
         apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
-        quickQuestions: [
-            { text: "What programs do you offer?", emoji: "🎓" },
-            { text: "How can I apply?", emoji: "📝" },
-            { text: "Tell me about tuition fees", emoji: "💰" }
-        ],
-        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
         retries: 2,
         timeoutMs: 20000,
         streamBatchIntervalMs: 200,
+        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
+
+        // Branding & Customization
+        branding: {
+            botName: 'Zsanett AI',
+            botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
+            widgetIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M19 22.5a4.75 4.75 0 0 1 3.5 -3.5a4.75 4.75 0 0 1 -3.5 -3.5a4.75 4.75 0 0 1 -3.5 3.5a4.75 4.75 0 0 1 3.5 3.5" /><path d="M20 11.5v-2.5a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v5a2 2 0 0 0 2 2h7" /></svg>',  // Widget bubble icon only
+            colors: {
+                primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
+            }
+        },
+
+        // Content Customization
+        content: {
+            barPlaceholder: 'Got any questions?',
+            panelPlaceholder: 'Type a message...',
+            quickQuestions: [
+                { text: "What programs do you offer?", emoji: "🎓" },
+                { text: "How can I apply?", emoji: "📝" },
+                { text: "Tell me about tuition fees", emoji: "💰" }
+            ],
+            quickQuestionsHeader: 'Frequently Asked Questions',
+            quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg>'
+        },
+
+        // Powered By Attribution
+        poweredBy: {
+            enabled: true,
+            text: 'Powered by',
+            brandName: 'Fylio',
+            brandUrl: 'https://fylio.hu',
+            logoUrl: './favicon.svg'
+        },
+
         // Rich Content Feature Flags (OFF by default for safety)
         enableRichContent: false,     // Master switch for all rich content features
         enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
         enableCards: false,            // Enable structured cards and carousels
-        fallbackToPlainText: true      // Fallback to plain text if libraries fail to load
+        fallbackToPlainText: true,     // Fallback to plain text if libraries fail to load
+
+        // DEPRECATED: Legacy support for old config format
+        quickQuestions: undefined      // Will be mapped from content.quickQuestions
     };
-    
-    // Merge with user config if provided
-    const CONFIG = typeof window.ChatbotConfig !== 'undefined'
-        ? { ...DEFAULT_CONFIG, ...window.ChatbotConfig }
-        : DEFAULT_CONFIG;
+
+    // Merge with user config if provided (with backward compatibility)
+    let CONFIG;
+    if (typeof window.ChatbotConfig !== 'undefined') {
+        const userConfig = window.ChatbotConfig;
+
+        // BACKWARD COMPATIBILITY: Map old flat config to new nested structure
+        const normalizedConfig = { ...userConfig };
+
+        // If user provided old-style quickQuestions at root level, map to content.quickQuestions
+        if (userConfig.quickQuestions && !userConfig.content?.quickQuestions) {
+            normalizedConfig.content = normalizedConfig.content || {};
+            normalizedConfig.content.quickQuestions = userConfig.quickQuestions;
+        }
+
+        CONFIG = deepMerge(DEFAULT_CONFIG, normalizedConfig);
+    } else {
+        CONFIG = DEFAULT_CONFIG;
+    }
+
+    // Set quickQuestions at root level for backward compatibility with existing code
+    CONFIG.quickQuestions = CONFIG.content?.quickQuestions || DEFAULT_CONFIG.content.quickQuestions;
 
     // ========================================
     // LIBRARY LOADING (for Rich Content)
@@ -99,6 +179,47 @@
     // ========================================
     // CSS INJECTION
     // ========================================
+
+    /**
+     * Generate CSS variables from configuration
+     * @returns {string} CSS variable declarations
+     */
+    function generateCSSVariables() {
+        const primary = CONFIG.branding.colors.primary;
+
+        return `
+        :root {
+            /* Brand Colors (Customizable - only primary color) */
+            --sw-primary: ${primary};
+            --sw-primary-light: ${primary};  /* Uses primary for active states */
+
+            /* Background Colors (Fixed for consistency) */
+            --sw-panel-bg: #f1f3f5;
+            --sw-card-bg: #ffffff;
+            --sw-header-bg: ${primary};  /* Header uses primary color */
+            --sw-input-area-bg: #e5e7eb;
+            --sw-input-field-bg: #ffffff;
+
+            /* Message Colors */
+            --sw-message-bot-bg: #F0F0F0;  /* Fixed light grey */
+            --sw-message-user-bg: ${primary};  /* User messages use primary color */
+
+            /* Input Colors (Fixed) */
+            --sw-input-border: #f3f4f6;
+            --sw-input-border-active: ${primary};  /* Active border uses primary */
+
+            /* Text Colors (Fixed for readability) */
+            --sw-text-primary: #1f2937;
+            --sw-text-secondary: #6b7280;
+            --sw-text-light: #9ca3af;
+
+            /* Button Colors (Fixed) */
+            --sw-button-disabled: #d1d5db;
+            --sw-button-disabled-text: #a1a1aa;
+        }
+        `;
+    }
+
     const CSS = `
         * {
             margin: 0;
@@ -198,7 +319,7 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            color: #8B5CF6;
+            color: var(--sw-primary);
             font-size: 18px;
             cursor: default;
             transition: all 0.2s;
@@ -211,7 +332,7 @@
             background: transparent;
             font-size: 14px;
             line-height: 1.2;
-            color: #374151;
+            color: var(--sw-text-primary);
             padding: 4px 4px;
         }
 
@@ -236,11 +357,11 @@
         }
 
         .sw-bar-icon-btn.send-btn {
-            background: #e5e7eb;
+            background: var(--sw-input-area-bg);
         }
 
         .sw-bar-icon-btn.send-btn.active {
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-primary);
             color: white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
         }
@@ -267,7 +388,7 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-primary);
             box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
             display: flex;
             align-items: center;
@@ -326,9 +447,9 @@
             right: 20px;
             width: 420px;
             height: calc(100vh - 40px);
-            background: linear-gradient(135deg, #f1f3f5 0%, #e9ecef 100%);
+            background: var(--sw-panel-bg);
             border-radius: 32px;
-            box-shadow: 
+            box-shadow:
                 0 0 0 1px rgba(0, 0, 0, 0.05),
                 0 20px 60px rgba(0, 0, 0, 0.2);
             display: flex;
@@ -351,21 +472,22 @@
         /* LAYER 2: White Main Chat Card */
         .sw-chat-main-card {
             flex: 1;
-            background: #ffffff;
+            background: var(--sw-card-bg);
             border-radius: 24px;
-            box-shadow: 
+            box-shadow:
                 0 2px 8px rgba(0, 0, 0, 0.04),
                 0 1px 2px rgba(0, 0, 0, 0.03);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            gap: 8px;
         }
 
         /* LAYER 3a: Elevated Purple Header Card */
         .sw-chat-header {
             padding: 20px;
-            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            background: var(--sw-header-bg);
             color: white;
             display: flex;
             justify-content: space-between;
@@ -373,7 +495,7 @@
             border-radius: 20px;
             flex-shrink: 0;
             margin: 8px 8px 0 8px;
-            box-shadow: 
+            box-shadow:
                 0 4px 12px rgba(139, 92, 246, 0.25),
                 0 2px 4px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -531,9 +653,9 @@
             gap: 8px;
         }
 
-        .sw-quick-questions-header::before {
-            content: '✨';
+        .sw-quick-questions-header .header-emoji {
             font-size: 20px;
+            color: var(--sw-primary);
         }
 
         .sw-quick-questions-list {
@@ -549,7 +671,7 @@
             border-radius: 20px;
             padding: 12px 20px;
             font-size: 14px;
-            color: #374151;
+            color: var(--sw-text-primary);
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
@@ -572,7 +694,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(167, 139, 250, 0.08));
+            background: rgba(139, 92, 246, 0.08);
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 0;
@@ -592,9 +714,8 @@
 
         .sw-quick-question-btn:hover {
             transform: translateX(-4px) translateY(-2px);
-            border-color: #A78BFA;
+            border-color: var(--sw-primary-light);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-            color: #8B5CF6;
         }
 
         .sw-quick-question-btn:hover::before {
@@ -647,7 +768,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #8B5CF6;
+            color: var(--sw-primary);
             font-size: 18px;
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -667,8 +788,8 @@
         }
 
         .sw-bot-message .sw-message-content {
-            background: #F0F0F0;
-            color: #1f2937;
+            background: var(--sw-message-bot-bg);
+            color: var(--sw-text-primary);
             border: 1px solid #e5e7eb;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
@@ -690,11 +811,11 @@
             content: '•';
             position: absolute;
             left: 0;
-            color: #8B5CF6;
+            color: var(--sw-primary);
         }
 
         .sw-user-message .sw-message-content {
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-message-user-bg);
             color: white;
             box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
         }
@@ -715,7 +836,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #8B5CF6;
+            background: var(--sw-primary);
             animation: sw-typing 1.4s infinite ease-in-out;
         }
 
@@ -736,31 +857,47 @@
 
         /* LAYER 3b: Elevated Input Card at Bottom */
         .sw-chat-input-area {
-            padding: 14px 18px;
-            background: #ffffff;
+            padding: 8px;
+            background: var(--sw-input-area-bg);
             display: flex;
-            gap: 12px;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
             flex-shrink: 0;
             border-radius: 20px;
             margin: 0 8px 8px 8px;
-            box-shadow: 
+            box-shadow:
                 0 -2px 8px rgba(0, 0, 0, 0.04),
                 0 2px 8px rgba(0, 0, 0, 0.06);
             position: relative;
             z-index: 2;
         }
 
+        .sw-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--sw-input-field-bg);
+            border-radius: 16px;
+            border: 2px solid transparent;
+            transition: all 0.25s;
+            margin: 0;
+            outline: none;
+        }
+
+        .sw-input-wrapper:focus-within {
+            border-color: var(--sw-input-border-active);
+        }
+
         .sw-panel-chat-input {
             flex: 1;
-            border: 2px solid #e5e7eb;
+            border: none;
             border-radius: 16px;
             outline: none;
-            background: #f9fafb;
-            padding: 12px 16px;
+            background: transparent;
+            padding: 12px 60px 12px 16px;
             font-size: 16px;
             font-family: inherit;
-            color: #1f2937;
+            color: var(--sw-text-primary);
             transition: all 0.25s;
             min-height: 44px;
             max-height: 150px;
@@ -769,45 +906,97 @@
             resize: none;
         }
 
-        .sw-panel-chat-input:focus {
-            border-color: #9ca3af;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        .sw-panel-chat-input::placeholder {
+            color: var(--sw-text-secondary);
         }
 
-        .sw-panel-chat-input::placeholder {
-            color: #6b7280;
+        .sw-panel-chat-input:focus-visible {
+            outline: none;
         }
 
         .sw-panel-send-btn {
-            width: 44px;
-            height: 44px;
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-button-disabled);
             border: none;
-            color: white;
+            color: var(--sw-button-disabled-text);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
             flex-shrink: 0;
+        }
+
+        .sw-panel-send-btn:not(:disabled) {
+            background: var(--sw-primary);
+            color: white;
             box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
         }
 
         .sw-panel-send-btn:hover:not(:disabled) {
-            transform: scale(1.08);
+            transform: translateY(-50%) scale(1.08);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
         }
 
         .sw-panel-send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            cursor: default;
         }
 
         .sw-panel-send-btn svg {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Powered by Fylio Attribution */
+        .sw-powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0;
+            font-size: 11px;
+            color: #9ca3af;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-text {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .sw-powered-by-link {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .sw-powered-by-link:hover {
+            color: var(--sw-primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .sw-powered-by-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-brand {
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
         /* Mobile Responsive */
@@ -868,7 +1057,7 @@
             }
             
             .sw-chat-input-area {
-                padding: 14px 16px;
+                padding: 8px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
@@ -891,8 +1080,19 @@
                 height: 100%;
                 overflow: hidden;
             }
+
+            /* Powered by mobile adjustments */
+            .sw-powered-by {
+                padding: 0;
+                font-size: 10px;
+            }
+
+            .sw-powered-by-icon {
+                width: 12px;
+                height: 12px;
+            }
         }
-        
+
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
@@ -901,12 +1101,12 @@
 
         /* Accessibility: Focus Indicators */
         *:focus-visible {
-            outline: 3px solid #8B5CF6;
+            outline: 3px solid var(--sw-primary);
             outline-offset: 2px;
         }
 
         .sw-quick-question-btn:focus-visible {
-            outline: 3px solid #8B5CF6;
+            outline: 3px solid var(--sw-primary);
             outline-offset: 3px;
         }
 
@@ -918,7 +1118,7 @@
         }
 
         .sw-chat-widget-bubble:focus-visible {
-            outline: 4px solid #8B5CF6;
+            outline: 4px solid var(--sw-primary);
             outline-offset: 4px;
         }
 
@@ -957,14 +1157,14 @@
         }
 
         .sw-message-content.markdown a {
-            color: #8B5CF6;
+            color: var(--sw-primary);
             text-decoration: none;
             border-bottom: 1px solid transparent;
             transition: border-color 0.2s;
         }
 
         .sw-message-content.markdown a:hover {
-            border-bottom-color: #8B5CF6;
+            border-bottom-color: var(--sw-primary);
         }
 
         .sw-message-content.markdown code {
@@ -993,10 +1193,10 @@
         }
 
         .sw-message-content.markdown blockquote {
-            border-left: 4px solid #8B5CF6;
+            border-left: 4px solid var(--sw-primary);
             padding-left: 12px;
             margin: 10px 0;
-            color: #6b7280;
+            color: var(--sw-text-secondary);
             font-style: italic;
         }
 
@@ -1096,7 +1296,7 @@
         }
 
         .sw-card-button.primary {
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-primary);
             color: white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
         }
@@ -1108,13 +1308,13 @@
 
         .sw-card-button.secondary {
             background: white;
-            color: #8B5CF6;
+            color: var(--sw-primary);
             border: 1.5px solid #e5e7eb;
         }
 
         .sw-card-button.secondary:hover {
             background: #f9fafb;
-            border-color: #8B5CF6;
+            border-color: var(--sw-primary);
         }
 
         /* Carousel for Multiple Cards */
@@ -1163,15 +1363,31 @@
     // ========================================
     // HTML TEMPLATE
     // ========================================
-    const HTML = `
+
+    /**
+     * Generate HTML template with dynamic configuration values
+     * @returns {string} HTML string
+     */
+    function generateHTML() {
+        const poweredByHTML = CONFIG.poweredBy.enabled ? `
+                    <!-- Powered by Attribution -->
+                    <div class="sw-powered-by">
+                        <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
+                        <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
+                            <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
+                            <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
+                        </a>
+                    </div>` : '';
+
+        return `
         <!-- Compact Chat Input Bar -->
         <div id="sw-chat-input-bar" class="sw-chat-input-bar" role="search" aria-label="Quick chat input">
-            <div class="sw-chat-avatar-mini" id="sw-avatar-mini" aria-hidden="true">✨</div>
-            <input 
-                type="text" 
-                id="sw-bar-chat-input" 
+            <div class="sw-chat-avatar-mini" id="sw-avatar-mini" aria-hidden="true">${CONFIG.content.quickQuestionsHeaderEmoji || CONFIG.branding.botAvatar}</div>
+            <input
+                type="text"
+                id="sw-bar-chat-input"
                 class="sw-bar-chat-input"
-                placeholder="Got any questions?"
+                placeholder="${CONFIG.content.barPlaceholder}"
                 autocomplete="off"
                 aria-label="Type your question here"
             />
@@ -1189,50 +1405,54 @@
 
         <!-- Persistent Chat Widget Bubble -->
         <div id="sw-chat-widget-bubble" class="sw-chat-widget-bubble" role="button" aria-label="Open chat" tabindex="0">
-            💬
+            ${CONFIG.branding.widgetIcon}
             <span class="sw-bubble-badge" aria-label="New messages available">1</span>
         </div>
 
         <!-- Chat Panel with 3-Layer Hierarchy -->
-        <div id="sw-chat-panel" class="sw-chat-panel" role="dialog" aria-label="Chat with Semmelweis AI" aria-modal="true">
+        <div id="sw-chat-panel" class="sw-chat-panel" role="dialog" aria-label="Chat with ${CONFIG.branding.botName}" aria-modal="true">
             <!-- LAYER 2: White Main Card -->
             <div class="sw-chat-main-card">
                 <!-- LAYER 3a: Elevated Header Card -->
                 <div class="sw-chat-header">
                     <div class="sw-chat-header-left">
-                        <div class="sw-chat-logo">🤖</div>
-                        <h3 class="sw-chat-header-title">Zsanett AI</h3>
+                        <div class="sw-chat-logo">${CONFIG.branding.botAvatar}</div>
+                        <h3 class="sw-chat-header-title">${CONFIG.branding.botName}</h3>
                     </div>
                     <div class="sw-chat-header-right">
                         <button id="sw-new-chat-btn" class="sw-header-icon-btn new-chat-btn" title="Start new chat" aria-label="Start new chat">+</button>
                         <button id="sw-panel-close-btn" class="sw-header-icon-btn close-btn" title="Close chat" aria-label="Close chat">×</button>
                     </div>
                 </div>
-                
+
                 <!-- Messages Area (Inside White Card) -->
                 <div class="sw-chat-messages" id="sw-chat-messages" role="log" aria-live="polite" aria-label="Chat conversation">
                     <!-- Messages added dynamically -->
                 </div>
-                
+
                 <!-- LAYER 3b: Elevated Input Card -->
                 <div class="sw-chat-input-area">
-                    <textarea
-                        id="sw-panel-chat-input"
-                        class="sw-panel-chat-input"
-                        rows="1"
-                        placeholder="Type a message..."
-                        autocomplete="off"
-                        aria-label="Type your message"
-                    ></textarea>
-                    <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </button>
+                    <div class="sw-input-wrapper">
+                        <textarea
+                            id="sw-panel-chat-input"
+                            class="sw-panel-chat-input"
+                            rows="1"
+                            placeholder="${CONFIG.content.panelPlaceholder}"
+                            autocomplete="off"
+                            aria-label="Type your message"
+                        ></textarea>
+                        <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message" disabled>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+${poweredByHTML}
                 </div>
             </div>
         </div>
     `;
+    }
     
     // ========================================
     // UTILITY: SSE-ENABLED FETCH WITH RETRY
@@ -1579,6 +1799,9 @@
             });
             this.panelChatInput.addEventListener('input', () => {
                 this.autoResizeTextarea(this.panelChatInput);
+                // Enable/disable send button based on input
+                const hasText = this.panelChatInput.value.trim().length > 0;
+                this.panelSendBtn.disabled = !hasText;
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
@@ -1678,13 +1901,31 @@
         renderQuickQuestions() {
             const existingSection = document.querySelector('.sw-quick-questions-section');
             if (existingSection) existingSection.remove();
-            
+
             const section = document.createElement('div');
             section.className = 'sw-quick-questions-section';
-            
+
             const header = document.createElement('h2');
             header.className = 'sw-quick-questions-header';
-            header.textContent = 'Frequently Asked Questions';
+
+            // Add emoji/SVG if configured
+            if (CONFIG.content.quickQuestionsHeaderEmoji) {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'header-emoji';
+                // Use innerHTML for SVG support, textContent for emoji
+                if (CONFIG.content.quickQuestionsHeaderEmoji.startsWith('<svg')) {
+                    emojiSpan.innerHTML = CONFIG.content.quickQuestionsHeaderEmoji;
+                } else {
+                    emojiSpan.textContent = CONFIG.content.quickQuestionsHeaderEmoji;
+                }
+                emojiSpan.setAttribute('aria-hidden', 'true');
+                header.appendChild(emojiSpan);
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = CONFIG.content.quickQuestionsHeader;
+            header.appendChild(textSpan);
+
             section.appendChild(header);
             
             const list = document.createElement('div');
@@ -1764,7 +2005,7 @@
             this.panelChatInput.value = '';
             this.autoResizeTextarea(this.panelChatInput); // Reset height
             this.panelChatInput.disabled = true;
-            this.panelSendBtn.disabled = true;
+            this.panelSendBtn.disabled = true; // Keep disabled while sending
 
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
@@ -2025,7 +2266,7 @@
                 const avatar = document.createElement('div');
                 avatar.className = 'sw-message-avatar';
                 avatar.setAttribute('aria-hidden', 'true');
-                avatar.textContent = '🤖';
+                avatar.textContent = CONFIG.branding.botAvatar;
                 wrapper.appendChild(avatar);
                 
                 const contentDiv = document.createElement('div');
@@ -2059,7 +2300,7 @@
             const avatar = document.createElement('div');
             avatar.className = 'sw-message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
-            avatar.textContent = '🤖';
+            avatar.textContent = CONFIG.branding.botAvatar;
             wrapper.appendChild(avatar);
             
             const contentDiv = document.createElement('div');
@@ -2213,7 +2454,8 @@
         if (document.getElementById('semmelweis-chatbot-styles')) return;
         const styleEl = document.createElement('style');
         styleEl.id = 'semmelweis-chatbot-styles';
-        styleEl.textContent = CSS;
+        // Inject CSS variables first, then main CSS
+        styleEl.textContent = generateCSSVariables() + CSS;
         document.head.appendChild(styleEl);
     }
     
@@ -2221,7 +2463,7 @@
         if (document.getElementById('semmelweis-chat-widget')) return;
         const container = document.createElement('div');
         container.id = 'semmelweis-chat-widget';
-        container.innerHTML = HTML;
+        container.innerHTML = generateHTML();
         document.body.appendChild(container);
     }
     
