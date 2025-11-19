@@ -10,27 +10,216 @@
     // ========================================
     // CONFIGURATION
     // ========================================
+
+    /**
+     * Deep merge utility function for nested configuration objects
+     * @param {Object} target - The target object
+     * @param {Object} source - The source object to merge into target
+     * @returns {Object} - The merged object
+     */
+    function deepMerge(target, source) {
+        const output = { ...target };
+
+        if (isObject(target) && isObject(source)) {
+            Object.keys(source).forEach(key => {
+                if (isObject(source[key])) {
+                    if (!(key in target)) {
+                        Object.assign(output, { [key]: source[key] });
+                    } else {
+                        output[key] = deepMerge(target[key], source[key]);
+                    }
+                } else {
+                    Object.assign(output, { [key]: source[key] });
+                }
+            });
+        }
+
+        return output;
+    }
+
+    function isObject(item) {
+        return item && typeof item === 'object' && !Array.isArray(item);
+    }
+
     const DEFAULT_CONFIG = {
-        apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',
-        quickQuestions: [
-            { text: "What programs do you offer?", emoji: "🎓" },
-            { text: "How can I apply?", emoji: "📝" },
-            { text: "Tell me about tuition fees", emoji: "💰" }
-        ],
-        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
+        // API Configuration
+        apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 200
+        streamBatchIntervalMs: 200,
+        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
+
+        // Branding & Customization
+        branding: {
+            botName: 'Zsanett AI',
+            botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
+            widgetIcon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><g clip-path="url(#clip0_98_22)"><path d="M8 9H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20L7.5 18H6C5.20435 18 4.44129 17.6839 3.87868 17.1213C3.31607 16.5587 3 15.7956 3 15V7C3 6.20435 3.31607 5.44129 3.87868 4.87868C4.44129 4.31607 5.20435 4 6 4H18C18.7956 4 19.5587 4.31607 20.1213 4.87868C20.6839 5.44129 21 6.20435 21 7V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V18C14 17.4696 14.2107 16.9609 14.5858 16.5858C14.9609 16.2107 15.4696 16 16 16C16.5304 16 17.0391 16.2107 17.4142 16.5858C17.7893 16.9609 18 17.4696 18 18V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 20H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="clip0_98_22"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
+            colors: {
+                primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
+            }
+        },
+
+        // Content Customization
+        content: {
+            barPlaceholder: 'Got any questions?',
+            panelPlaceholder: 'Type a message...',
+            quickQuestions: [
+                { text: "What programs do you offer?", emoji: "🎓" },
+                { text: "How can I apply?", emoji: "📝" },
+                { text: "Tell me about tuition fees", emoji: "💰" }
+            ],
+            quickQuestionsHeader: 'Frequently Asked Questions',
+            quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg>'
+        },
+
+        // Powered By Attribution
+        poweredBy: {
+            enabled: true,
+            text: 'Powered by',
+            brandName: 'Fylio',
+            brandUrl: 'https://fylio.hu',
+            logoUrl: './favicon.svg'
+        },
+
+        // Rich Content Feature Flags (OFF by default for safety)
+        enableRichContent: false,     // Master switch for all rich content features
+        enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
+        enableCards: false,            // Enable structured cards and carousels
+        fallbackToPlainText: true,     // Fallback to plain text if libraries fail to load
+
+        // DEPRECATED: Legacy support for old config format
+        quickQuestions: undefined      // Will be mapped from content.quickQuestions
     };
-    
-    // Merge with user config if provided
-    const CONFIG = typeof window.ChatbotConfig !== 'undefined' 
-        ? { ...DEFAULT_CONFIG, ...window.ChatbotConfig }
-        : DEFAULT_CONFIG;
-    
+
+    // Merge with user config if provided (with backward compatibility)
+    let CONFIG;
+    if (typeof window.ChatbotConfig !== 'undefined') {
+        const userConfig = window.ChatbotConfig;
+
+        // BACKWARD COMPATIBILITY: Map old flat config to new nested structure
+        const normalizedConfig = { ...userConfig };
+
+        // If user provided old-style quickQuestions at root level, map to content.quickQuestions
+        if (userConfig.quickQuestions && !userConfig.content?.quickQuestions) {
+            normalizedConfig.content = normalizedConfig.content || {};
+            normalizedConfig.content.quickQuestions = userConfig.quickQuestions;
+        }
+
+        CONFIG = deepMerge(DEFAULT_CONFIG, normalizedConfig);
+    } else {
+        CONFIG = DEFAULT_CONFIG;
+    }
+
+    // Set quickQuestions at root level for backward compatibility with existing code
+    CONFIG.quickQuestions = CONFIG.content?.quickQuestions || DEFAULT_CONFIG.content.quickQuestions;
+
+    // ========================================
+    // LIBRARY LOADING (for Rich Content)
+    // ========================================
+    let LIBRARIES_LOADED = {
+        marked: false,
+        DOMPurify: false
+    };
+
+    function loadLibraries() {
+        return new Promise((resolve) => {
+            // If rich content disabled, skip loading
+            if (!CONFIG.enableRichContent) {
+                console.log('[Chatbot] Rich content disabled, skipping library load');
+                resolve(false);
+                return;
+            }
+
+            let loadedCount = 0;
+            const totalLibraries = 2;
+
+            function checkComplete() {
+                loadedCount++;
+                if (loadedCount === totalLibraries) {
+                    const allLoaded = LIBRARIES_LOADED.marked && LIBRARIES_LOADED.DOMPurify;
+                    console.log('[Chatbot] Libraries loaded:', allLoaded ? 'success' : 'failed');
+                    resolve(allLoaded);
+                }
+            }
+
+            // Load marked.js (markdown parser)
+            const markedScript = document.createElement('script');
+            markedScript.src = 'https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js';
+            markedScript.onload = () => {
+                LIBRARIES_LOADED.marked = typeof window.marked !== 'undefined';
+                if (LIBRARIES_LOADED.marked) {
+                    console.log('[Chatbot] marked.js loaded successfully');
+                }
+                checkComplete();
+            };
+            markedScript.onerror = () => {
+                console.warn('[Chatbot] Failed to load marked.js - markdown rendering will be disabled');
+                checkComplete();
+            };
+            document.head.appendChild(markedScript);
+
+            // Load DOMPurify (HTML sanitization)
+            const purifyScript = document.createElement('script');
+            purifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js';
+            purifyScript.onload = () => {
+                LIBRARIES_LOADED.DOMPurify = typeof window.DOMPurify !== 'undefined';
+                if (LIBRARIES_LOADED.DOMPurify) {
+                    console.log('[Chatbot] DOMPurify loaded successfully');
+                }
+                checkComplete();
+            };
+            purifyScript.onerror = () => {
+                console.warn('[Chatbot] Failed to load DOMPurify - HTML sanitization will be disabled');
+                checkComplete();
+            };
+            document.head.appendChild(purifyScript);
+        });
+    }
+
     // ========================================
     // CSS INJECTION
     // ========================================
+
+    /**
+     * Generate CSS variables from configuration
+     * @returns {string} CSS variable declarations
+     */
+    function generateCSSVariables() {
+        const primary = CONFIG.branding.colors.primary;
+
+        return `
+        :root {
+            /* Brand Colors (Customizable - only primary color) */
+            --sw-primary: ${primary};
+            --sw-primary-light: ${primary};  /* Uses primary for active states */
+
+            /* Background Colors (Fixed for consistency) */
+            --sw-panel-bg: #f1f3f5;
+            --sw-card-bg: #ffffff;
+            --sw-header-bg: ${primary};  /* Header uses primary color */
+            --sw-input-area-bg: #e5e7eb;
+            --sw-input-field-bg: #ffffff;
+
+            /* Message Colors */
+            --sw-message-bot-bg: #F0F0F0;  /* Fixed light grey */
+            --sw-message-user-bg: ${primary};  /* User messages use primary color */
+
+            /* Input Colors (Fixed) */
+            --sw-input-border: #f3f4f6;
+            --sw-input-border-active: ${primary};  /* Active border uses primary */
+
+            /* Text Colors (Fixed for readability) */
+            --sw-text-primary: #1f2937;
+            --sw-text-secondary: #6b7280;
+            --sw-text-light: #9ca3af;
+
+            /* Button Colors (Fixed) */
+            --sw-button-disabled: #d1d5db;
+            --sw-button-disabled-text: #a1a1aa;
+        }
+        `;
+    }
+
     const CSS = `
         * {
             margin: 0;
@@ -47,7 +236,7 @@
         /* Compact Chat Input Bar */
         .sw-chat-input-bar {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%) scale(1);
             background: white;
@@ -130,7 +319,7 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            color: #8B5CF6;
+            color: var(--sw-primary);
             font-size: 18px;
             cursor: default;
             transition: all 0.2s;
@@ -143,8 +332,12 @@
             background: transparent;
             font-size: 14px;
             line-height: 1.2;
-            color: #374151;
+            color: var(--sw-text-primary);
             padding: 4px 4px;
+        }
+
+        .sw-bar-chat-input:focus-visible {
+            outline: none;
         }
 
         .sw-bar-icon-btn {
@@ -164,11 +357,11 @@
         }
 
         .sw-bar-icon-btn.send-btn {
-            background: #e5e7eb;
+            background: var(--sw-input-area-bg);
         }
 
         .sw-bar-icon-btn.send-btn.active {
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-primary);
             color: white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
         }
@@ -195,7 +388,7 @@
             width: 64px;
             height: 64px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-primary);
             box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
             display: flex;
             align-items: center;
@@ -220,6 +413,11 @@
             opacity: 0;
             transform: scale(0.8);
             pointer-events: none;
+        }
+
+        .sw-chat-widget-bubble svg {
+            width: 40px;
+            height: 40px;
         }
 
         /* Notification Badge */
@@ -254,9 +452,9 @@
             right: 20px;
             width: 420px;
             height: calc(100vh - 40px);
-            background: linear-gradient(135deg, #f1f3f5 0%, #e9ecef 100%);
+            background: var(--sw-panel-bg);
             border-radius: 32px;
-            box-shadow: 
+            box-shadow:
                 0 0 0 1px rgba(0, 0, 0, 0.05),
                 0 20px 60px rgba(0, 0, 0, 0.2);
             display: flex;
@@ -264,7 +462,7 @@
             opacity: 0;
             transform: scale(0.92) translateY(30px);
             pointer-events: none;
-            transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
             z-index: 10000;
             padding: 8px;
             gap: 8px;
@@ -279,21 +477,22 @@
         /* LAYER 2: White Main Chat Card */
         .sw-chat-main-card {
             flex: 1;
-            background: #ffffff;
+            background: var(--sw-card-bg);
             border-radius: 24px;
-            box-shadow: 
+            box-shadow:
                 0 2px 8px rgba(0, 0, 0, 0.04),
                 0 1px 2px rgba(0, 0, 0, 0.03);
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            gap: 8px;
         }
 
         /* LAYER 3a: Elevated Purple Header Card */
         .sw-chat-header {
-            padding: 18px 20px;
-            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            padding: 16px 20px;
+            background: var(--sw-header-bg);
             color: white;
             display: flex;
             justify-content: space-between;
@@ -301,7 +500,7 @@
             border-radius: 20px;
             flex-shrink: 0;
             margin: 8px 8px 0 8px;
-            box-shadow: 
+            box-shadow:
                 0 4px 12px rgba(139, 92, 246, 0.25),
                 0 2px 4px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -311,24 +510,24 @@
         .sw-chat-header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .sw-chat-logo {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .sw-chat-header-title {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.02em;
@@ -345,14 +544,14 @@
             backdrop-filter: blur(10px);
             border: none;
             color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 18px;
             transition: all 0.2s;
             font-weight: 400;
         }
@@ -360,11 +559,6 @@
         .sw-header-icon-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
-        }
-
-        .sw-header-icon-btn.new-chat-btn {
-            font-size: 24px;
-            font-weight: 300;
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -375,7 +569,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 14px;
         }
 
         .sw-chat-messages::-webkit-scrollbar {
@@ -459,9 +653,9 @@
             gap: 8px;
         }
 
-        .sw-quick-questions-header::before {
-            content: '✨';
+        .sw-quick-questions-header .header-emoji {
             font-size: 20px;
+            color: var(--sw-primary);
         }
 
         .sw-quick-questions-list {
@@ -477,7 +671,7 @@
             border-radius: 20px;
             padding: 12px 20px;
             font-size: 14px;
-            color: #374151;
+            color: var(--sw-text-primary);
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
@@ -500,7 +694,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(167, 139, 250, 0.08));
+            background: rgba(139, 92, 246, 0.08);
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 0;
@@ -520,9 +714,8 @@
 
         .sw-quick-question-btn:hover {
             transform: translateX(-4px) translateY(-2px);
-            border-color: #A78BFA;
+            border-color: var(--sw-primary-light);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-            color: #8B5CF6;
         }
 
         .sw-quick-question-btn:hover::before {
@@ -539,7 +732,7 @@
             display: flex;
             flex-direction: column;
             max-width: 85%;
-            animation: sw-messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: sw-messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         @keyframes sw-messageSlideIn {
@@ -575,17 +768,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #8B5CF6;
+            color: var(--sw-primary);
             font-size: 18px;
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
 
         .sw-message-content {
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-radius: 20px;
-            font-size: 15px;
-            line-height: 1.6;
+            font-size: 16px;
+            line-height: 1.45;
+            letter-spacing: -0.011em;
             word-wrap: break-word;
             word-break: break-word;
             overflow-wrap: break-word;
@@ -594,9 +788,10 @@
         }
 
         .sw-bot-message .sw-message-content {
-            background: #f9fafb;
-            color: #1f2937;
-            border-bottom-left-radius: 6px;
+            background: var(--sw-message-bot-bg);
+            color: var(--sw-text-primary);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
         .sw-bot-message .sw-message-content ul {
@@ -616,14 +811,13 @@
             content: '•';
             position: absolute;
             left: 0;
-            color: #8B5CF6;
+            color: var(--sw-primary);
         }
 
         .sw-user-message .sw-message-content {
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-message-user-bg);
             color: white;
-            border-bottom-right-radius: 6px;
-            box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
         }
 
         /* Typing Indicator */
@@ -642,7 +836,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #8B5CF6;
+            background: var(--sw-primary);
             animation: sw-typing 1.4s infinite ease-in-out;
         }
 
@@ -663,73 +857,146 @@
 
         /* LAYER 3b: Elevated Input Card at Bottom */
         .sw-chat-input-area {
-            padding: 14px 18px;
-            background: #ffffff;
+            padding: 8px;
+            background: var(--sw-input-area-bg);
             display: flex;
-            gap: 12px;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
             flex-shrink: 0;
             border-radius: 20px;
             margin: 0 8px 8px 8px;
-            box-shadow: 
+            box-shadow:
                 0 -2px 8px rgba(0, 0, 0, 0.04),
                 0 2px 8px rgba(0, 0, 0, 0.06);
             position: relative;
             z-index: 2;
         }
 
-        .sw-panel-chat-input {
-            flex: 1;
-            border: 2px solid #e5e7eb;
+        .sw-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--sw-input-field-bg);
             border-radius: 16px;
-            outline: none;
-            background: #f9fafb;
-            padding: 12px 16px;
-            font-size: 16px;
-            font-family: inherit;
-            color: #1f2937;
+            border: 2px solid transparent;
             transition: all 0.25s;
+            margin: 0;
+            outline: none;
         }
 
-        .sw-panel-chat-input:focus {
-            border-color: #8B5CF6;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        .sw-input-wrapper:focus-within {
+            border-color: var(--sw-input-border-active);
+        }
+
+        .sw-panel-chat-input {
+            flex: 1;
+            border: none;
+            border-radius: 16px;
+            outline: none;
+            background: transparent;
+            padding: 12px 60px 12px 16px;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--sw-text-primary);
+            transition: all 0.25s;
+            min-height: 44px;
+            max-height: 150px;
+            line-height: 1.5;
+            overflow-y: hidden;
+            resize: none;
         }
 
         .sw-panel-chat-input::placeholder {
-            color: #6b7280;
+            color: var(--sw-text-secondary);
+        }
+
+        .sw-panel-chat-input:focus-visible {
+            outline: none;
         }
 
         .sw-panel-send-btn {
-            width: 44px;
-            height: 44px;
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+            background: var(--sw-button-disabled);
             border: none;
-            color: white;
+            color: var(--sw-button-disabled-text);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
             flex-shrink: 0;
+        }
+
+        .sw-panel-send-btn:not(:disabled) {
+            background: var(--sw-primary);
+            color: white;
             box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
         }
 
         .sw-panel-send-btn:hover:not(:disabled) {
-            transform: scale(1.08);
+            transform: translateY(-50%) scale(1.08);
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
         }
 
         .sw-panel-send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            cursor: default;
         }
 
         .sw-panel-send-btn svg {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Powered by Fylio Attribution */
+        .sw-powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0;
+            font-size: 11px;
+            color: #9ca3af;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-text {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        .sw-powered-by-link {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .sw-powered-by-link:hover {
+            color: var(--sw-primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .sw-powered-by-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .sw-powered-by-brand {
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
         /* Mobile Responsive */
@@ -769,19 +1036,27 @@
             }
             
             .sw-chat-header {
-                padding: 16px 18px;
+                padding: 14px 18px;
                 border-radius: 18px;
                 margin: 6px 6px 0 6px;
             }
-            
+
             .sw-chat-header-title {
-                font-size: 20px;
+                font-size: 18px;
             }
-            
-            .new-chat-btn {
-                display: none;
+
+            .sw-chat-logo {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
             }
-            
+
+            .sw-header-icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
                 padding: 16px;
@@ -790,7 +1065,7 @@
             }
             
             .sw-chat-input-area {
-                padding: 14px 16px;
+                padding: 8px;
                 border-radius: 18px;
                 margin: 0 6px 6px 6px;
             }
@@ -801,7 +1076,12 @@
                 width: 56px;
                 height: 56px;
             }
-            
+
+            .sw-chat-widget-bubble svg {
+                width: 36px;
+                height: 36px;
+            }
+
             /* NEW: Fix input font size to prevent iOS zoom */
             .sw-panel-chat-input,
             .sw-bar-chat-input {
@@ -813,11 +1093,282 @@
                 height: 100%;
                 overflow: hidden;
             }
+
+            /* Powered by mobile adjustments */
+            .sw-powered-by {
+                padding: 0;
+                font-size: 10px;
+            }
+
+            .sw-powered-by-icon {
+                width: 12px;
+                height: 12px;
+            }
         }
-        
+
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
+            }
+        }
+
+        /* Accessibility: Focus Indicators */
+        *:focus-visible {
+            outline: 3px solid var(--sw-primary);
+            outline-offset: 2px;
+        }
+
+        .sw-quick-question-btn:focus-visible {
+            outline: 3px solid var(--sw-primary);
+            outline-offset: 3px;
+        }
+
+        .sw-panel-send-btn:focus-visible,
+        .sw-header-icon-btn:focus-visible,
+        .sw-bar-icon-btn:focus-visible {
+            outline: 3px solid white;
+            outline-offset: 2px;
+        }
+
+        .sw-chat-widget-bubble:focus-visible {
+            outline: 4px solid var(--sw-primary);
+            outline-offset: 4px;
+        }
+
+        /* Accessibility: Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* ========================================
+           RICH CONTENT STYLES (Markdown & Cards)
+           ======================================== */
+
+        /* Markdown Content Styling */
+        .sw-message-content.markdown h1,
+        .sw-message-content.markdown h2,
+        .sw-message-content.markdown h3 {
+            margin: 12px 0 8px 0;
+            color: #1f2937;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .sw-message-content.markdown h1 { font-size: 20px; }
+        .sw-message-content.markdown h2 { font-size: 18px; }
+        .sw-message-content.markdown h3 { font-size: 16px; }
+
+        .sw-message-content.markdown p {
+            margin: 8px 0;
+        }
+
+        .sw-message-content.markdown a {
+            color: var(--sw-primary);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .sw-message-content.markdown a:hover {
+            border-bottom-color: var(--sw-primary);
+        }
+
+        .sw-message-content.markdown code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #ef4444;
+        }
+
+        .sw-message-content.markdown pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .sw-message-content.markdown pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 13px;
+        }
+
+        .sw-message-content.markdown blockquote {
+            border-left: 4px solid var(--sw-primary);
+            padding-left: 12px;
+            margin: 10px 0;
+            color: var(--sw-text-secondary);
+            font-style: italic;
+        }
+
+        /* Card Container */
+        .sw-card-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0;
+        }
+
+        /* Single Card */
+        .sw-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sw-bot-message .sw-card {
+            background: white;
+            border: 1px solid #ede9fe;
+        }
+
+        .sw-card:hover {
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Card Image */
+        .sw-card-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #f3f4f6;
+        }
+
+        .sw-card-image.loading {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: sw-shimmer 1.5s infinite;
+        }
+
+        @keyframes sw-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Card Content */
+        .sw-card-content {
+            padding: 14px;
+        }
+
+        .sw-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 6px 0;
+            line-height: 1.3;
+        }
+
+        .sw-card-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0 0 10px 0;
+        }
+
+        .sw-card-metadata {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+
+        /* Card Actions */
+        .sw-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .sw-card-button {
+            flex: 1;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+
+        .sw-card-button.primary {
+            background: var(--sw-primary);
+            color: white;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+        }
+
+        .sw-card-button.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);
+        }
+
+        .sw-card-button.secondary {
+            background: white;
+            color: var(--sw-primary);
+            border: 1.5px solid #e5e7eb;
+        }
+
+        .sw-card-button.secondary:hover {
+            background: #f9fafb;
+            border-color: var(--sw-primary);
+        }
+
+        /* Carousel for Multiple Cards */
+        .sw-card-carousel {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+
+        .sw-card-carousel::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .sw-card-carousel .sw-card {
+            min-width: 280px;
+            max-width: 280px;
+            scroll-snap-align: start;
+        }
+
+        /* Mobile Responsive Cards */
+        @media (max-width: 768px) {
+            .sw-card-image {
+                height: 140px;
+            }
+
+            .sw-card-carousel .sw-card {
+                min-width: 240px;
+                max-width: 240px;
             }
         }
     `;
@@ -825,21 +1376,37 @@
     // ========================================
     // HTML TEMPLATE
     // ========================================
-    const HTML = `
+
+    /**
+     * Generate HTML template with dynamic configuration values
+     * @returns {string} HTML string
+     */
+    function generateHTML() {
+        const poweredByHTML = CONFIG.poweredBy.enabled ? `
+                    <!-- Powered by Attribution -->
+                    <div class="sw-powered-by">
+                        <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
+                        <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
+                            <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
+                            <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
+                        </a>
+                    </div>` : '';
+
+        return `
         <!-- Compact Chat Input Bar -->
         <div id="sw-chat-input-bar" class="sw-chat-input-bar" role="search" aria-label="Quick chat input">
-            <div class="sw-chat-avatar-mini" id="sw-avatar-mini" aria-hidden="true">✨</div>
-            <input 
-                type="text" 
-                id="sw-bar-chat-input" 
+            <div class="sw-chat-avatar-mini" id="sw-avatar-mini" aria-hidden="true">${CONFIG.content.quickQuestionsHeaderEmoji || CONFIG.branding.botAvatar}</div>
+            <input
+                type="text"
+                id="sw-bar-chat-input"
                 class="sw-bar-chat-input"
-                placeholder="Got any questions?"
+                placeholder="${CONFIG.content.barPlaceholder}"
                 autocomplete="off"
                 aria-label="Type your question here"
             />
             <button class="sw-bar-icon-btn send-btn" id="sw-bar-send-btn" title="Send message" aria-label="Send message">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
                 </svg>
             </button>
             <button class="sw-bar-icon-btn close-btn" id="sw-bar-close-btn" title="Dismiss chat bar" aria-label="Dismiss chat bar">
@@ -851,50 +1418,53 @@
 
         <!-- Persistent Chat Widget Bubble -->
         <div id="sw-chat-widget-bubble" class="sw-chat-widget-bubble" role="button" aria-label="Open chat" tabindex="0">
-            💬
+            ${CONFIG.branding.widgetIcon}
             <span class="sw-bubble-badge" aria-label="New messages available">1</span>
         </div>
 
         <!-- Chat Panel with 3-Layer Hierarchy -->
-        <div id="sw-chat-panel" class="sw-chat-panel" role="dialog" aria-label="Chat with Semmelweis AI" aria-modal="true">
+        <div id="sw-chat-panel" class="sw-chat-panel" role="dialog" aria-label="Chat with ${CONFIG.branding.botName}" aria-modal="true">
             <!-- LAYER 2: White Main Card -->
             <div class="sw-chat-main-card">
                 <!-- LAYER 3a: Elevated Header Card -->
                 <div class="sw-chat-header">
                     <div class="sw-chat-header-left">
-                        <div class="sw-chat-logo">🤖</div>
-                        <h3 class="sw-chat-header-title">Zsanett AI</h3>
+                        <div class="sw-chat-logo">${CONFIG.branding.botAvatar}</div>
+                        <h3 class="sw-chat-header-title">${CONFIG.branding.botName}</h3>
                     </div>
                     <div class="sw-chat-header-right">
-                        <button id="sw-new-chat-btn" class="sw-header-icon-btn new-chat-btn" title="Start new chat" aria-label="Start new chat">+</button>
                         <button id="sw-panel-close-btn" class="sw-header-icon-btn close-btn" title="Close chat" aria-label="Close chat">×</button>
                     </div>
                 </div>
-                
+
                 <!-- Messages Area (Inside White Card) -->
                 <div class="sw-chat-messages" id="sw-chat-messages" role="log" aria-live="polite" aria-label="Chat conversation">
                     <!-- Messages added dynamically -->
                 </div>
-                
+
                 <!-- LAYER 3b: Elevated Input Card -->
                 <div class="sw-chat-input-area">
-                    <input 
-                        type="text" 
-                        id="sw-panel-chat-input" 
-                        class="sw-panel-chat-input"
-                        placeholder="Type a message..."
-                        autocomplete="off"
-                        aria-label="Type your message"
-                    />
-                    <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </button>
+                    <div class="sw-input-wrapper">
+                        <textarea
+                            id="sw-panel-chat-input"
+                            class="sw-panel-chat-input"
+                            rows="1"
+                            placeholder="${CONFIG.content.panelPlaceholder}"
+                            autocomplete="off"
+                            aria-label="Type your message"
+                        ></textarea>
+                        <button id="sw-panel-send-btn" class="sw-panel-send-btn" aria-label="Send message" disabled>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                            </svg>
+                        </button>
+                    </div>
+${poweredByHTML}
                 </div>
             </div>
         </div>
     `;
+    }
     
     // ========================================
     // UTILITY: SSE-ENABLED FETCH WITH RETRY
@@ -979,7 +1549,226 @@
                 return v.toString(16);
             });
         }
-        
+
+        // ========================================
+        // RICH CONTENT RENDERING FUNCTIONS
+        // ========================================
+
+        detectMessageType(data) {
+            // Backwards compatible: plain string = text
+            if (typeof data === 'string') {
+                return { type: 'text', content: data };
+            }
+
+            // Object with type field
+            if (data && typeof data === 'object') {
+                // Explicit type specified
+                if (data.type) {
+                    return data;
+                }
+
+                // Auto-detect card structure
+                if (data.title || data.image || data.buttons) {
+                    return { type: 'card', ...data };
+                }
+
+                // Auto-detect multiple items (carousel)
+                if (Array.isArray(data.items)) {
+                    return { type: 'carousel', items: data.items };
+                }
+
+                // Default to text if has content field
+                if (data.content) {
+                    return { type: 'text', content: data.content };
+                }
+            }
+
+            // Fallback: treat as plain text
+            return { type: 'text', content: String(data) };
+        }
+
+        hasMarkdownSyntax(text) {
+            // Quick heuristic to detect if text contains markdown
+            const markdownPatterns = [
+                /^#+\s/m,          // Headers
+                /\*\*.*\*\*/,      // Bold
+                /\*.*\*/,          // Italic
+                /\[.*\]\(.*\)/,    // Links
+                /`.*`/,            // Code
+                /^[-*+]\s/m,       // Lists
+                /^>\s/m            // Blockquotes
+            ];
+
+            return markdownPatterns.some(pattern => pattern.test(text));
+        }
+
+        escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        renderMarkdown(content) {
+            // Feature check
+            if (!CONFIG.enableMarkdown || !LIBRARIES_LOADED.marked || !LIBRARIES_LOADED.DOMPurify) {
+                // Fallback to plain text
+                return this.escapeHtml(content);
+            }
+
+            try {
+                // Configure marked
+                window.marked.setOptions({
+                    breaks: true,        // Convert \n to <br>
+                    gfm: true,          // GitHub Flavored Markdown
+                    headerIds: false,   // Don't add IDs to headers
+                    mangle: false       // Don't escape emails
+                });
+
+                // Render markdown
+                const rawHtml = window.marked.parse(content);
+
+                // Sanitize with DOMPurify
+                const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
+                                  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
+                                  'code', 'pre', 'hr'],
+                    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                    ALLOW_DATA_ATTR: false
+                });
+
+                return cleanHtml;
+            } catch (error) {
+                console.error('[Chatbot] Markdown rendering failed:', error);
+                return this.escapeHtml(content);
+            }
+        }
+
+        renderCard(cardData) {
+            if (!CONFIG.enableCards) {
+                // Fallback: render as text
+                const text = `${cardData.title || ''}\n${cardData.description || ''}`;
+                return this.escapeHtml(text);
+            }
+
+            try {
+                const card = document.createElement('div');
+                card.className = 'sw-card';
+
+                // Image (if provided)
+                if (cardData.image) {
+                    const img = document.createElement('img');
+                    img.className = 'sw-card-image loading';
+                    img.src = cardData.image;
+                    img.alt = cardData.title || 'Card image';
+                    img.loading = 'lazy';
+
+                    img.onload = () => img.classList.remove('loading');
+                    img.onerror = () => {
+                        img.style.display = 'none';
+                        console.warn('[Chatbot] Card image failed to load:', cardData.image);
+                    };
+
+                    card.appendChild(img);
+                }
+
+                // Content area
+                const content = document.createElement('div');
+                content.className = 'sw-card-content';
+
+                // Title
+                if (cardData.title) {
+                    const title = document.createElement('div');
+                    title.className = 'sw-card-title';
+                    title.textContent = cardData.title;
+                    content.appendChild(title);
+                }
+
+                // Description
+                if (cardData.description) {
+                    const desc = document.createElement('div');
+                    desc.className = 'sw-card-description';
+                    desc.textContent = cardData.description;
+                    content.appendChild(desc);
+                }
+
+                // Metadata (optional)
+                if (cardData.metadata && Array.isArray(cardData.metadata)) {
+                    const metadata = document.createElement('div');
+                    metadata.className = 'sw-card-metadata';
+
+                    cardData.metadata.forEach(item => {
+                        const metaItem = document.createElement('span');
+                        metaItem.textContent = item;
+                        metadata.appendChild(metaItem);
+                    });
+
+                    content.appendChild(metadata);
+                }
+
+                // Buttons/Actions
+                if (cardData.buttons && Array.isArray(cardData.buttons)) {
+                    const actions = document.createElement('div');
+                    actions.className = 'sw-card-actions';
+
+                    cardData.buttons.forEach((btn, index) => {
+                        const button = document.createElement('button');
+                        button.className = `sw-card-button ${index === 0 ? 'primary' : 'secondary'}`;
+                        button.textContent = btn.label || btn.text;
+
+                        button.onclick = () => {
+                            if (btn.url) {
+                                window.open(btn.url, '_blank', 'noopener,noreferrer');
+                            } else if (btn.action === 'send') {
+                                this.sendMessage(btn.value || btn.label);
+                            }
+                        };
+
+                        actions.appendChild(button);
+                    });
+
+                    content.appendChild(actions);
+                }
+
+                card.appendChild(content);
+                return card.outerHTML;
+            } catch (error) {
+                console.error('[Chatbot] Card rendering failed:', error);
+                const text = `${cardData.title || ''}\n${cardData.description || ''}`;
+                return this.escapeHtml(text);
+            }
+        }
+
+        renderCarousel(items) {
+            if (!CONFIG.enableCards || !Array.isArray(items)) {
+                return this.escapeHtml('Multiple items available');
+            }
+
+            try {
+                const carousel = document.createElement('div');
+                carousel.className = 'sw-card-carousel';
+
+                items.forEach(item => {
+                    const cardHtml = this.renderCard(item);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = cardHtml;
+                    const cardElement = tempDiv.firstChild;
+                    if (cardElement) {
+                        carousel.appendChild(cardElement);
+                    }
+                });
+
+                return carousel.outerHTML;
+            } catch (error) {
+                console.error('[Chatbot] Carousel rendering failed:', error);
+                return this.escapeHtml(`${items.length} items available`);
+            }
+        }
+
         init() {
             // Get DOM elements
             this.chatInputBar = document.getElementById('sw-chat-input-bar');
@@ -994,8 +1783,7 @@
             this.panelChatInput = document.getElementById('sw-panel-chat-input');
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
-            this.newChatBtn = document.getElementById('sw-new-chat-btn');
-            
+
             // Bind events for bar
             this.barChatInput.addEventListener('focus', () => this.expandBar());
             this.barChatInput.addEventListener('blur', () => this.contractBar());
@@ -1013,16 +1801,22 @@
             this.chatWidgetBubble.addEventListener('click', () => this.openPanel());
             
             // Bind events for panel
-            this.panelChatInput.addEventListener('keypress', (e) => {
+            this.panelChatInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     this.sendFromPanel();
                 }
+                // Shift+Enter allows new line (default behavior)
+            });
+            this.panelChatInput.addEventListener('input', () => {
+                this.autoResizeTextarea(this.panelChatInput);
+                // Enable/disable send button based on input
+                const hasText = this.panelChatInput.value.trim().length > 0;
+                this.panelSendBtn.disabled = !hasText;
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
-            this.newChatBtn.addEventListener('click', () => this.startNewChat());
-            
+
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
@@ -1034,21 +1828,36 @@
                     this.userIsScrolling = false;
                 }, 1000);  // User stopped scrolling after 1 second
             });
+
+            // Keyboard shortcuts for accessibility
+            document.addEventListener('keydown', (e) => {
+                // Escape to close panel
+                if (e.key === 'Escape' && this.isPanelOpen) {
+                    e.preventDefault();
+                    this.closePanel();
+                }
+
+                // Cmd/Ctrl + K to open chat
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k' && !this.isPanelOpen) {
+                    e.preventDefault();
+                    this.openPanel();
+                }
+            });
         }
-        
+
         expandBar() {
             if (!this.isBarDismissed && !this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.add('expanded');
-                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 450);
+                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 300);
             }
         }
-        
+
         contractBar() {
             if (this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.remove('expanded');
-                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 450);
+                setTimeout(() => this.chatInputBar.classList.remove('expanding'), 300);
             }
         }
         
@@ -1102,13 +1911,31 @@
         renderQuickQuestions() {
             const existingSection = document.querySelector('.sw-quick-questions-section');
             if (existingSection) existingSection.remove();
-            
+
             const section = document.createElement('div');
             section.className = 'sw-quick-questions-section';
-            
+
             const header = document.createElement('h2');
             header.className = 'sw-quick-questions-header';
-            header.textContent = 'Frequently Asked Questions';
+
+            // Add emoji/SVG if configured
+            if (CONFIG.content.quickQuestionsHeaderEmoji) {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'header-emoji';
+                // Use innerHTML for SVG support, textContent for emoji
+                if (CONFIG.content.quickQuestionsHeaderEmoji.startsWith('<svg')) {
+                    emojiSpan.innerHTML = CONFIG.content.quickQuestionsHeaderEmoji;
+                } else {
+                    emojiSpan.textContent = CONFIG.content.quickQuestionsHeaderEmoji;
+                }
+                emojiSpan.setAttribute('aria-hidden', 'true');
+                header.appendChild(emojiSpan);
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = CONFIG.content.quickQuestionsHeader;
+            header.appendChild(textSpan);
+
             section.appendChild(header);
             
             const list = document.createElement('div');
@@ -1160,7 +1987,6 @@
             this.chatMessages.innerHTML = '';
             this.firstMessageSent = false;
             this.sessionId = this.generateUUID();
-            this.addDateSeparator();
             this.renderQuickQuestions();
         }
         
@@ -1184,16 +2010,17 @@
         async sendFromPanel() {
             const message = this.panelChatInput.value.trim();
             if (!message) return;
-            
+
             this.panelChatInput.value = '';
+            this.autoResizeTextarea(this.panelChatInput); // Reset height
             this.panelChatInput.disabled = true;
-            this.panelSendBtn.disabled = true;
-            
+            this.panelSendBtn.disabled = true; // Keep disabled while sending
+
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
-            
+
             try {
                 await this.sendMessage(message);
             } catch (error) {
@@ -1231,14 +2058,21 @@
                 );
                 
                 console.log('[Chatbot] Webhook response status:', response.status);
-                
-                // Process SSE streaming response
-                await this.processStreamingResponse(response, botMessageId);
-                
+
+                // Process SSE streaming response with timeout protection
+                const streamTimeout = 30000; // 30 seconds
+                const streamPromise = this.processStreamingResponse(response, botMessageId);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Stream timeout after 30 seconds')), streamTimeout)
+                );
+
+                await Promise.race([streamPromise, timeoutPromise]);
+
             } catch (error) {
                 console.error('[Chatbot] Error sending message:', error);
                 this.updateMessage(botMessageId, CONFIG.fallbackResponse);
             } finally {
+                // Defensive: Also hide here in case processStreamingResponse errors before its finally
                 this.hideTypingIndicator(botMessageId);
             }
         }
@@ -1315,17 +2149,27 @@
                                     this.hideTypingIndicator(messageId);
                                     firstChunkReceived = true;
                                 }
-                                
+
                                 let chunkContent = '';
-                                
-                                // Check if content is JSON with output field
+
+                                // Check if content is JSON with output field or structured data
                                 if (typeof item.content === 'string' && item.content.startsWith('{')) {
                                     try {
                                         const contentObj = JSON.parse(item.content);
+
+                                        // Final output object
                                         if (contentObj.output) {
-                                            // Final output - update buffer immediately
                                             this.streamingBuffer.content = contentObj.output;
                                             console.log('[Chatbot] Found final output:', contentObj.output);
+                                            continue;
+                                        }
+
+                                        // NEW: Card or structured data (complete object)
+                                        if (contentObj.type === 'card' || contentObj.type === 'carousel' || contentObj.title) {
+                                            // Don't stream cards - wait for complete object
+                                            this.streamingBuffer.content = contentObj;
+                                            this.streamingBuffer.isStructured = true;
+                                            console.log('[Chatbot] Received structured content:', contentObj.type || 'card');
                                             continue;
                                         }
                                     } catch {
@@ -1334,9 +2178,9 @@
                                 } else {
                                     chunkContent = item.content;
                                 }
-                                
-                                // Add chunk to buffer (no state update here)
-                                if (chunkContent) {
+
+                                // Add chunk to buffer (only for text streaming, not structured data)
+                                if (chunkContent && !this.streamingBuffer.isStructured) {
                                     this.streamingBuffer.content += chunkContent;
                                     console.log('[Chatbot] Buffered chunk:', chunkContent);
                                 }
@@ -1347,22 +2191,33 @@
                     }
                 }
             } finally {
+                // CRITICAL: Always release the reader to prevent hanging
+                try {
+                    reader.releaseLock();
+                } catch (e) {
+                    console.warn('[Chatbot] Reader release failed:', e);
+                }
+
                 // Stop batch updates
                 clearInterval(batchInterval);
-                
+
+                // CRITICAL FIX: Hide typing indicator BEFORE final flush
+                this.hideTypingIndicator(messageId);
+
                 // Final flush
                 if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
                     const finalContent = this.streamingBuffer.content;
                     const msgId = this.streamingBuffer.messageId;
                     this.updateMessage(msgId, finalContent);
+                } else {
+                    // Check if we got any content
+                    console.error('[Chatbot] No content extracted from stream');
+                    this.updateMessage(messageId, '⚠️ No content received from stream');
                 }
             }
-            
-            // Check if we got any content
-            if (!this.streamingBuffer.content) {
-                console.error('[Chatbot] No content extracted from stream');
-                this.updateMessage(messageId, '⚠️ No content received from stream');
-            }
+
+            // CRITICAL: Explicitly return resolved Promise to signal completion
+            return Promise.resolve();
         }
         
         openPanel() {
@@ -1420,7 +2275,7 @@
                 const avatar = document.createElement('div');
                 avatar.className = 'sw-message-avatar';
                 avatar.setAttribute('aria-hidden', 'true');
-                avatar.textContent = '🤖';
+                avatar.textContent = CONFIG.branding.botAvatar;
                 wrapper.appendChild(avatar);
                 
                 const contentDiv = document.createElement('div');
@@ -1454,7 +2309,7 @@
             const avatar = document.createElement('div');
             avatar.className = 'sw-message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
-            avatar.textContent = '🤖';
+            avatar.textContent = CONFIG.branding.botAvatar;
             wrapper.appendChild(avatar);
             
             const contentDiv = document.createElement('div');
@@ -1469,15 +2324,64 @@
         
         updateMessage(messageId, content) {
             const messageDiv = document.getElementById(messageId);
-            if (messageDiv) {
-                const contentDiv = messageDiv.querySelector('.sw-message-content');
-                if (contentDiv) {
-                    contentDiv.textContent = content;
-                    // Only scroll if user is already near bottom or not scrolling
-                    if (this.isNearBottom() && !this.userIsScrolling) {
-                        this.scrollToBottom();
-                    }
+            if (!messageDiv) return;
+
+            const contentDiv = messageDiv.querySelector('.sw-message-content');
+            if (!contentDiv) return;
+
+            // BACKWARDS COMPATIBLE PATH: Feature flag check
+            if (!CONFIG.enableRichContent) {
+                // Use existing behavior (plain text only)
+                contentDiv.textContent = content;
+                if (this.isNearBottom() && !this.userIsScrolling) {
+                    this.scrollToBottom();
                 }
+                return;
+            }
+
+            // NEW PATH: Rich content rendering
+            try {
+                const messageData = this.detectMessageType(content);
+
+                switch (messageData.type) {
+                    case 'text':
+                        // Check if markdown is enabled and content has markdown syntax
+                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
+                            const html = this.renderMarkdown(messageData.content);
+                            contentDiv.innerHTML = html;
+                            contentDiv.classList.add('markdown');
+                        } else {
+                            // Plain text (safe, uses textContent)
+                            contentDiv.textContent = messageData.content;
+                        }
+                        break;
+
+                    case 'card':
+                        const cardHtml = this.renderCard(messageData);
+                        contentDiv.innerHTML = cardHtml;
+                        contentDiv.classList.add('card-container');
+                        break;
+
+                    case 'carousel':
+                        const carouselHtml = this.renderCarousel(messageData.items);
+                        contentDiv.innerHTML = carouselHtml;
+                        contentDiv.classList.add('card-container');
+                        break;
+
+                    default:
+                        // Unknown type: fallback to text
+                        console.warn('[Chatbot] Unknown message type:', messageData.type);
+                        contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
+                }
+
+                // Scroll behavior (unchanged)
+                if (this.isNearBottom() && !this.userIsScrolling) {
+                    this.scrollToBottom();
+                }
+            } catch (error) {
+                console.error('[Chatbot] updateMessage rendering error:', error);
+                // Emergency fallback: show as plain text
+                contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
             }
         }
         
@@ -1536,6 +2440,20 @@
             const height = this.chatMessages.scrollHeight;
             return position >= height - threshold;
         }
+
+        // Auto-resize textarea as user types
+        autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 150);
+            textarea.style.height = newHeight + 'px';
+
+            // Only show scrollbar when content exceeds max-height
+            if (textarea.scrollHeight > 150) {
+                textarea.style.overflowY = 'auto';
+            } else {
+                textarea.style.overflowY = 'hidden';
+            }
+        }
     }
     
     // ========================================
@@ -1545,7 +2463,8 @@
         if (document.getElementById('semmelweis-chatbot-styles')) return;
         const styleEl = document.createElement('style');
         styleEl.id = 'semmelweis-chatbot-styles';
-        styleEl.textContent = CSS;
+        // Inject CSS variables first, then main CSS
+        styleEl.textContent = generateCSSVariables() + CSS;
         document.head.appendChild(styleEl);
     }
     
@@ -1553,23 +2472,34 @@
         if (document.getElementById('semmelweis-chat-widget')) return;
         const container = document.createElement('div');
         container.id = 'semmelweis-chat-widget';
-        container.innerHTML = HTML;
+        container.innerHTML = generateHTML();
         document.body.appendChild(container);
     }
     
-    function init() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                injectStyles();
-                injectHTML();
-                window.SemmelweisChatWidget = new ChatWidget();
-                console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
-            });
-        } else {
+    async function init() {
+        const initialize = async () => {
             injectStyles();
             injectHTML();
+
+            // Load libraries if rich content enabled
+            if (CONFIG.enableRichContent) {
+                console.log('[Chatbot] Loading rich content libraries...');
+                await loadLibraries();
+            }
+
             window.SemmelweisChatWidget = new ChatWidget();
             console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
+            console.log('[Chatbot] Rich content:', CONFIG.enableRichContent ? 'enabled' : 'disabled');
+            if (CONFIG.enableRichContent) {
+                console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
+                console.log('[Chatbot] Cards:', CONFIG.enableCards ? 'enabled' : 'disabled');
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            await initialize();
         }
     }
     
