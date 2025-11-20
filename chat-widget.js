@@ -201,7 +201,7 @@
             --sw-input-field-bg: #ffffff;
 
             /* Message Colors */
-            --sw-message-bot-bg: #F0F0F0;  /* Fixed light grey */
+            --sw-message-bot-bg: #f3f4f6;  /* gray-100 - matches avatar background */
             --sw-message-user-bg: ${primary};  /* User messages use primary color */
 
             /* Input Colors (Fixed) */
@@ -486,79 +486,137 @@
             flex-direction: column;
             overflow: hidden;
             position: relative;
-            gap: 8px;
+            gap: 0;
         }
 
-        /* LAYER 3a: Elevated Purple Header Card */
+        /* LAYER 3a: Floating Pill Bar */
         .sw-chat-header {
-            padding: 16px 20px;
+            /* Positioning: Absolute at top center */
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+
+            /* Sizing: Compact pill */
+            width: auto;
+            max-width: calc(80% - 60px);
+
+            /* Pill shape: Fully rounded */
+            border-radius: 999px;
+
+            /* Spacing: Enhanced padding for larger avatar */
+            padding: 10px 16px 10px 10px;
+
+            /* Background */
             background: var(--sw-header-bg);
             color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 20px;
-            flex-shrink: 0;
-            margin: 8px 8px 0 8px;
+
+            /* Shadow: Elevated floating effect */
             box-shadow:
-                0 4px 12px rgba(139, 92, 246, 0.25),
-                0 2px 4px rgba(0, 0, 0, 0.1);
-            position: relative;
-            z-index: 2;
+                0 8px 24px rgba(0, 0, 0, 0.12),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+
+            /* Layout */
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
         }
 
         .sw-chat-header-left {
             display: flex;
             align-items: center;
             gap: 10px;
+            width: 100%;
+            min-width: 0;
         }
 
         .sw-chat-logo {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
         }
 
         .sw-chat-header-title {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 16px;
+            font-weight: 600;
             margin: 0;
             letter-spacing: -0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .sw-chat-header-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        /* External Minimize Button - Hover Reveal Design */
+        .sw-header-minimize-btn {
+            position: absolute;
+            top: 24px; /* Aligned with pill vertical center */
+            right: 16px;
+            z-index: 4;
 
-        .sw-header-icon-btn {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+
+            /* Default: No background, just subtle dash */
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+
+            color: var(--sw-text-secondary); /* Harmonizes with UI color system */
             cursor: pointer;
+
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            transition: all 0.2s;
-            font-weight: 400;
+
+            transition: all 0.25s ease;
+            flex-shrink: 0;
         }
 
-        .sw-header-icon-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
+        .sw-header-minimize-btn:hover {
+            /* Hover: Circle fades in smoothly */
+            background: rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: var(--sw-text-primary); /* Dash becomes more prominent */
+            transform: scale(1.02);
+        }
+
+        .sw-header-minimize-btn svg {
+            width: 18px;
+            height: 18px;
+            transition: all 0.25s ease;
+        }
+
+        /* Header Background Zone with Gradient Fade */
+        .sw-header-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            z-index: 2;
+
+            background: linear-gradient(
+                180deg,
+                #ffffff 0%,
+                #ffffff 50%,
+                rgba(255, 255, 255, 0.9) 60%,
+                rgba(255, 255, 255, 0.7) 75%,
+                rgba(255, 255, 255, 0.3) 90%,
+                rgba(255, 255, 255, 0) 100%
+            );
+
+            pointer-events: none;
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -566,7 +624,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 20px;
+            padding: 110px 20px 20px 20px;
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -582,18 +640,18 @@
         }
 
         .sw-chat-messages::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #d1d5db; /* gray-300 - matches UI neutral palette */
             border-radius: 10px;
             transition: background 0.2s ease;
         }
 
         .sw-chat-messages::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: #9ca3af; /* gray-400 - matches text-light variable */
         }
 
         .sw-chat-messages {
             scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
+            scrollbar-color: #d1d5db transparent; /* gray-300 - matches webkit scrollbar */
         }
 
         /* Date Separator */
@@ -790,7 +848,6 @@
         .sw-bot-message .sw-message-content {
             background: var(--sw-message-bot-bg);
             color: var(--sw-text-primary);
-            border: 1px solid #e5e7eb;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
 
@@ -1030,19 +1087,19 @@
                 height: 100vh;
                 height: 100dvh; /* ADD: Dynamic viewport height */
                 border-radius: 0;
-                padding: 8px;
-                gap: 8px;
+                padding: 0;
+                gap: 0;
                 overflow: hidden; /* ADD: Prevent scroll on panel */
             }
             
             .sw-chat-header {
-                padding: 14px 18px;
-                border-radius: 18px;
-                margin: 6px 6px 0 6px;
+                top: 12px;
+                max-width: calc(100% - 70px);
+                padding: 8px 10px 8px 8px;
             }
 
             .sw-chat-header-title {
-                font-size: 18px;
+                font-size: 15px;
             }
 
             .sw-chat-logo {
@@ -1051,15 +1108,25 @@
                 font-size: 16px;
             }
 
-            .sw-header-icon-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 18px;
+            .sw-header-minimize-btn {
+                top: 18px; /* Aligned with mobile pill vertical center */
+                right: 12px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .sw-header-minimize-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .sw-header-background {
+                height: 80px;
             }
 
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
-                padding: 16px;
+                padding: 90px 16px 16px 16px;
                 overflow-x: hidden; /* ADD: Prevent horizontal scroll */
                 -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
@@ -1092,6 +1159,7 @@
             .sw-chat-main-card {
                 height: 100%;
                 overflow: hidden;
+                border-radius: 0;
             }
 
             /* Powered by mobile adjustments */
@@ -1426,16 +1494,23 @@
         <div id="sw-chat-panel" class="sw-chat-panel" role="dialog" aria-label="Chat with ${CONFIG.branding.botName}" aria-modal="true">
             <!-- LAYER 2: White Main Card -->
             <div class="sw-chat-main-card">
-                <!-- LAYER 3a: Elevated Header Card -->
+                <!-- LAYER 3a: Header Background Zone -->
+                <div class="sw-header-background"></div>
+
+                <!-- Floating Pill Header -->
                 <div class="sw-chat-header">
                     <div class="sw-chat-header-left">
                         <div class="sw-chat-logo">${CONFIG.branding.botAvatar}</div>
                         <h3 class="sw-chat-header-title">${CONFIG.branding.botName}</h3>
                     </div>
-                    <div class="sw-chat-header-right">
-                        <button id="sw-panel-close-btn" class="sw-header-icon-btn close-btn" title="Close chat" aria-label="Close chat">×</button>
-                    </div>
                 </div>
+
+                <!-- External Minimize Button -->
+                <button id="sw-panel-close-btn" class="sw-header-minimize-btn" title="Minimize chat" aria-label="Minimize chat">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <line x1="3" y1="8" x2="13" y2="8"/>
+                    </svg>
+                </button>
 
                 <!-- Messages Area (Inside White Card) -->
                 <div class="sw-chat-messages" id="sw-chat-messages" role="log" aria-live="polite" aria-label="Chat conversation">
