@@ -53,7 +53,7 @@
         branding: {
             botName: 'Zsanett AI',
             botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
-            widgetIcon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none"><g clip-path="url(#clip0_98_22)"><path d="M8 9H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20L7.5 18H6C5.20435 18 4.44129 17.6839 3.87868 17.1213C3.31607 16.5587 3 15.7956 3 15V7C3 6.20435 3.31607 5.44129 3.87868 4.87868C4.44129 4.31607 5.20435 4 6 4H18C18.7956 4 19.5587 4.31607 20.1213 4.87868C20.6839 5.44129 21 6.20435 21 7V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 22V18C14 17.4696 14.2107 16.9609 14.5858 16.5858C14.9609 16.2107 15.4696 16 16 16C16.5304 16 17.0391 16.2107 17.4142 16.5858C17.7893 16.9609 18 17.4696 18 18V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 20H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16V22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="clip0_98_22"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
+            widgetIcon: '<svg viewBox="0 0 30 30" fill="none"><g clip-path="url(#clip0_114_14)"><path d="M8 14H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 18H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 5H7.5C6.50544 5 5.55161 5.39509 4.84835 6.09835C4.14509 6.80161 3.75 7.75544 3.75 8.75V18.75C3.75 19.7446 4.14509 20.6984 4.84835 21.4017C5.55161 22.1049 6.50544 22.5 7.5 22.5H10V26.25L16.25 22.5H22.5C23.4946 22.5 24.4484 22.1049 25.1517 21.4017C25.8549 20.6984 26.25 19.7446 26.25 18.75V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.8462 11.5391L21.9846 13.0615L20.4609 16.923L18.9385 13.0615L15.077 11.5391L18.9385 10.0154L20.4609 6.15381L21.9846 10.0154L25.8462 11.5391Z" fill="currentColor"/><path d="M26.8337 11.5846C26.8337 11.8226 26.6867 12.0396 26.464 12.1265C26.464 12.1265 23.5345 12.5931 22.3994 13.801C21.2643 15.0089 20.9587 17.6318 20.9587 17.6318C20.9155 17.7405 20.8407 17.8336 20.7439 17.8993C20.6472 17.9649 20.533 18 20.4161 18C20.2992 18 20.185 17.9649 20.0883 17.8993C19.9915 17.8336 19.9167 17.7405 19.8735 17.6318C19.8735 17.6318 19.4886 14.8555 18.3166 13.6834C17.1445 12.5114 14.3682 12.1265 14.3682 12.1265C14.2595 12.0833 14.1664 12.0085 14.1007 11.9117C14.0351 11.815 14 11.7008 14 11.5839C14 11.467 14.0351 11.3528 14.1007 11.2561C14.1664 11.1593 14.2595 11.0845 14.3682 11.0413C14.3682 11.0413 17.1445 10.6564 18.3166 9.48438C19.4886 8.31235 19.8735 5.53596 19.8735 5.53596C19.9167 5.42733 19.9915 5.33417 20.0883 5.26853C20.185 5.20289 20.2992 5.1678 20.4161 5.1678C20.533 5.1678 20.6472 5.20289 20.7439 5.26853C20.8407 5.33417 20.9155 5.42733 20.9587 5.53596C20.9587 5.53596 21.3436 8.31235 22.5156 9.48438C23.6877 10.6564 26.464 11.0413 26.464 11.0413C26.5727 11.0848 26.666 11.1597 26.7318 11.2565C26.7977 11.3533 26.8331 11.4675 26.8337 11.5846ZM24.6592 11.5846L21.8534 10.4771C21.779 10.4475 21.7115 10.4031 21.6549 10.3465C21.5983 10.2899 21.5539 10.2224 21.5243 10.148L20.4182 7.34075L19.3093 10.148C19.2799 10.2223 19.2356 10.2897 19.1793 10.3463C19.123 10.4028 19.0557 10.4473 18.9816 10.4771L16.173 11.5832L18.9816 12.6921C19.0556 12.7217 19.1228 12.766 19.1791 12.8223C19.2354 12.8786 19.2797 12.9458 19.3093 13.0198L20.4168 15.8284L21.5243 13.0198C21.5541 12.9457 21.5986 12.8784 21.6551 12.8221C21.7117 12.7658 21.7791 12.7215 21.8534 12.6921L24.6592 11.5846ZM28 6.33405C28 6.33405 26.8941 6.59145 26.4094 7.07612C25.9248 7.5608 25.6674 8.66669 25.6674 8.66669C25.6674 8.66669 25.4089 7.56076 24.9239 7.07612C24.439 6.59166 23.3333 6.33405 23.3333 6.33405C23.3333 6.33405 24.4392 6.07666 24.9239 5.59197C25.4089 5.10693 25.666 4 25.666 4C25.666 4 25.9235 5.10571 26.408 5.59057C26.893 6.07594 28 6.33405 28 6.33405Z" fill="currentColor"/></g><defs><clipPath id="clip0_114_14"><rect width="30" height="30" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
             colors: {
                 primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
             }
@@ -69,7 +69,7 @@
                 { text: "Tell me about tuition fees", emoji: "💰" }
             ],
             quickQuestionsHeader: 'Frequently Asked Questions',
-            quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg>'
+            quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z"/></svg>'
         },
 
         // UI Visibility Controls
@@ -331,6 +331,11 @@
             transition: all 0.2s;
         }
 
+        .sw-chat-avatar-mini svg {
+            width: 20px;
+            height: 20px;
+        }
+
         .sw-bar-chat-input {
             flex: 1;
             border: none;
@@ -401,8 +406,8 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            width: 64px;
-            height: 64px;
+            width: 56px;  /* Standard size: 64px → 56px */
+            height: 56px;
             border-radius: 50%;
             background: var(--sw-primary);
             box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
@@ -432,8 +437,8 @@
         }
 
         .sw-chat-widget-bubble svg {
-            width: 40px;
-            height: 40px;
+            width: 36px;  /* Icon size: 40px → 36px (64.3% of bubble) */
+            height: 36px;
         }
 
         /* Notification Badge */
@@ -717,21 +722,28 @@
         }
 
         .sw-quick-questions-header {
-            font-size: 18px;
+            font-size: 22px;  /* Increased from 18px for better prominence */
             font-weight: 800;
             color: #111827;
             text-align: left;
             letter-spacing: -0.03em;
-            margin-bottom: 8px;
+            margin-bottom: 10px;  /* Slightly more space below */
             line-height: 1.2;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;  /* Slightly more gap between text and icon */
         }
 
         .sw-quick-questions-header .header-emoji {
-            font-size: 20px;
+            font-size: 28px;  /* Larger icon for better visual impact */
             color: var(--sw-primary);
+            flex-shrink: 0;  /* Prevent icon from shrinking */
+        }
+
+        .sw-quick-questions-header .header-emoji svg {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
         }
 
         .sw-quick-questions-list {
@@ -1158,13 +1170,13 @@
             .sw-chat-widget-bubble {
                 bottom: 16px;
                 right: 16px;
-                width: 56px;
-                height: 56px;
+                width: 52px;  /* Mobile: slightly smaller */
+                height: 52px;
             }
 
             .sw-chat-widget-bubble svg {
-                width: 36px;
-                height: 36px;
+                width: 32px;  /* Mobile icon: maintains proportion */
+                height: 32px;
             }
 
             /* NEW: Fix input font size to prevent iOS zoom */
@@ -2030,7 +2042,12 @@ ${poweredByHTML}
             const header = document.createElement('h2');
             header.className = 'sw-quick-questions-header';
 
-            // Add emoji/SVG if configured
+            // Add text first
+            const textSpan = document.createElement('span');
+            textSpan.textContent = CONFIG.content.quickQuestionsHeader;
+            header.appendChild(textSpan);
+
+            // Add emoji/SVG after text if configured
             if (CONFIG.content.quickQuestionsHeaderEmoji) {
                 const emojiSpan = document.createElement('span');
                 emojiSpan.className = 'header-emoji';
@@ -2043,10 +2060,6 @@ ${poweredByHTML}
                 emojiSpan.setAttribute('aria-hidden', 'true');
                 header.appendChild(emojiSpan);
             }
-
-            const textSpan = document.createElement('span');
-            textSpan.textContent = CONFIG.content.quickQuestionsHeader;
-            header.appendChild(textSpan);
 
             section.appendChild(header);
             
