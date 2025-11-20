@@ -72,9 +72,15 @@
             quickQuestionsHeaderEmoji: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2zm-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z" /></svg>'
         },
 
-        // Powered By Attribution
+        // UI Visibility Controls
+        ui: {
+            showFloatingBar: true,  // Show/hide the floating chat input bar at the bottom
+            showPoweredBy: true     // Show/hide "Powered by" attribution
+        },
+
+        // Powered By Attribution (internal - not user configurable)
         poweredBy: {
-            enabled: true,
+            enabled: true,  // DEPRECATED: Use ui.showPoweredBy instead
             text: 'Powered by',
             brandName: 'Fylio',
             brandUrl: 'https://fylio.hu',
@@ -344,9 +350,9 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: #f3f4f6;
+            background: #9DA3AF; /* gray-400 - default/disabled state */
             border: none;
-            color: #9ca3af;
+            color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -357,22 +363,32 @@
         }
 
         .sw-bar-icon-btn.send-btn {
-            background: var(--sw-input-area-bg);
+            background: #9DA3AF; /* gray-400 - inactive/disabled */
+        }
+
+        .sw-bar-icon-btn.send-btn:not(.active) {
+            cursor: default; /* Regular cursor when disabled */
         }
 
         .sw-bar-icon-btn.send-btn.active {
-            background: var(--sw-primary);
+            background: var(--sw-primary); /* Primary color when active */
             color: white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
         }
 
         .sw-bar-icon-btn.send-btn.active:hover {
             transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .sw-bar-icon-btn.close-btn {
+            background: #9DA3AF; /* gray-400 - same as inactive send button */
+            color: white;
         }
 
         .sw-bar-icon-btn.close-btn:hover {
-            background: #fee2e2;
-            color: #ef4444;
+            background: #ED5E69; /* red-300 - more subtle light red on hover */
+            color: white;
         }
 
         .sw-bar-icon-btn svg {
@@ -447,11 +463,13 @@
         /* LAYER 1: Grey Outer Container Card */
         .sw-chat-panel {
             position: fixed;
-            top: 20px;
-            bottom: 20px;
-            right: 20px;
-            width: 420px;
-            height: calc(100vh - 40px);
+            bottom: 24px;
+            right: 24px;
+            width: 50vh; /* Responsive: 50% of viewport height */
+            max-width: 400px; /* Cap at 400px for standard screens */
+            min-width: 300px; /* Minimum width constraint */
+            height: 92vh; /* Responsive height - 92% of viewport */
+            max-height: 800px; /* Maximum height cap for large displays */
             background: var(--sw-panel-bg);
             border-radius: 32px;
             box-shadow:
@@ -752,7 +770,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(139, 92, 246, 0.08);
+            background: rgba(17, 24, 39, 0.04); /* Neutral grey - works with any primary color */
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 0;
@@ -773,7 +791,7 @@
         .sw-quick-question-btn:hover {
             transform: translateX(-4px) translateY(-2px);
             border-color: var(--sw-primary-light);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Neutral shadow - works with any primary color */
         }
 
         .sw-quick-question-btn:hover::before {
@@ -782,7 +800,7 @@
 
         .sw-quick-question-btn:active {
             transform: translateX(-2px) translateY(-1px);
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.15);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Neutral shadow - works with any primary color */
         }
 
         /* Messages */
@@ -979,9 +997,9 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: var(--sw-button-disabled);
+            background: #9DA3AF; /* gray-400 - disabled state */
             border: none;
-            color: var(--sw-button-disabled-text);
+            color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -991,7 +1009,7 @@
         }
 
         .sw-panel-send-btn:not(:disabled) {
-            background: var(--sw-primary);
+            background: var(--sw-primary); /* Primary color when enabled */
             color: white;
             box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
         }
@@ -1212,6 +1230,13 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
+            }
+        }
+
+        /* Responsive: Larger max-width for 2xl screens */
+        @media (min-width: 1536px) {
+            .sw-chat-panel {
+                max-width: 420px;
             }
         }
 
@@ -1450,7 +1475,9 @@
      * @returns {string} HTML string
      */
     function generateHTML() {
-        const poweredByHTML = CONFIG.poweredBy.enabled ? `
+        // Check ui.showPoweredBy first, fallback to poweredBy.enabled for backward compatibility
+        const showPoweredBy = CONFIG.ui?.showPoweredBy ?? CONFIG.poweredBy.enabled;
+        const poweredByHTML = showPoweredBy ? `
                     <!-- Powered by Attribution -->
                     <div class="sw-powered-by">
                         <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
@@ -1460,7 +1487,8 @@
                         </a>
                     </div>` : '';
 
-        return `
+        // Conditionally include floating bar based on ui.showFloatingBar
+        const floatingBarHTML = CONFIG.ui?.showFloatingBar ? `
         <!-- Compact Chat Input Bar -->
         <div id="sw-chat-input-bar" class="sw-chat-input-bar" role="search" aria-label="Quick chat input">
             <div class="sw-chat-avatar-mini" id="sw-avatar-mini" aria-hidden="true">${CONFIG.content.quickQuestionsHeaderEmoji || CONFIG.branding.botAvatar}</div>
@@ -1483,7 +1511,10 @@
                 </svg>
             </button>
         </div>
+        ` : '';
 
+        return `
+        ${floatingBarHTML}
         <!-- Persistent Chat Widget Bubble -->
         <div id="sw-chat-widget-bubble" class="sw-chat-widget-bubble" role="button" aria-label="Open chat" tabindex="0">
             ${CONFIG.branding.widgetIcon}
@@ -1851,7 +1882,7 @@ ${poweredByHTML}
             this.barSendBtn = document.getElementById('sw-bar-send-btn');
             this.barCloseBtn = document.getElementById('sw-bar-close-btn');
             this.avatarMini = document.getElementById('sw-avatar-mini');
-            
+
             this.chatWidgetBubble = document.getElementById('sw-chat-widget-bubble');
             this.chatPanel = document.getElementById('sw-chat-panel');
             this.chatMessages = document.getElementById('sw-chat-messages');
@@ -1859,19 +1890,21 @@ ${poweredByHTML}
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
 
-            // Bind events for bar
-            this.barChatInput.addEventListener('focus', () => this.expandBar());
-            this.barChatInput.addEventListener('blur', () => this.contractBar());
-            this.barChatInput.addEventListener('input', () => this.onBarInputChange());
-            this.barChatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendFromBar();
-                }
-            });
-            this.barSendBtn.addEventListener('click', () => this.sendFromBar());
-            this.barCloseBtn.addEventListener('click', () => this.dismissBar());
-            
+            // Bind events for bar (only if bar is enabled)
+            if (this.chatInputBar && this.barChatInput && this.barSendBtn && this.barCloseBtn) {
+                this.barChatInput.addEventListener('focus', () => this.expandBar());
+                this.barChatInput.addEventListener('blur', () => this.contractBar());
+                this.barChatInput.addEventListener('input', () => this.onBarInputChange());
+                this.barChatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendFromBar();
+                    }
+                });
+                this.barSendBtn.addEventListener('click', () => this.sendFromBar());
+                this.barCloseBtn.addEventListener('click', () => this.dismissBar());
+            }
+
             // Bind events for bubble
             this.chatWidgetBubble.addEventListener('click', () => this.openPanel());
             
@@ -1921,6 +1954,7 @@ ${poweredByHTML}
         }
 
         expandBar() {
+            if (!this.chatInputBar) return; // Bar is disabled
             if (!this.isBarDismissed && !this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.add('expanded');
@@ -1929,14 +1963,16 @@ ${poweredByHTML}
         }
 
         contractBar() {
+            if (!this.chatInputBar) return; // Bar is disabled
             if (this.chatInputBar.classList.contains('expanded')) {
                 this.chatInputBar.classList.add('expanding');
                 this.chatInputBar.classList.remove('expanded');
                 setTimeout(() => this.chatInputBar.classList.remove('expanding'), 300);
             }
         }
-        
+
         onBarInputChange() {
+            if (!this.barChatInput || !this.barSendBtn) return; // Bar is disabled
             const hasText = this.barChatInput.value.trim().length > 0;
             if (hasText) {
                 this.barSendBtn.classList.add('active');
@@ -1944,25 +1980,26 @@ ${poweredByHTML}
                 this.barSendBtn.classList.remove('active');
             }
         }
-        
+
         dismissBar() {
+            if (!this.chatInputBar) return; // Bar is disabled
             this.isBarDismissed = true;
             this.chatInputBar.classList.add('dismissed');
         }
-        
+
         handleScroll() {
-            if (this.isBarDismissed || this.isPanelOpen) return;
-            
+            if (!this.chatInputBar || this.isBarDismissed || this.isPanelOpen) return;
+
             const currentScrollY = window.scrollY;
             const scrollingDown = currentScrollY > this.lastScrollY;
             const scrollingUp = currentScrollY < this.lastScrollY;
-            
+
             if (scrollingDown && currentScrollY > this.scrollThreshold) {
                 this.chatInputBar.classList.add('hidden');
             } else if (scrollingUp) {
                 this.chatInputBar.classList.remove('hidden');
             }
-            
+
             this.lastScrollY = currentScrollY;
         }
         
@@ -2066,19 +2103,20 @@ ${poweredByHTML}
         }
         
         async sendFromBar() {
+            if (!this.barChatInput || !this.barSendBtn || !this.chatInputBar) return; // Bar is disabled
             const message = this.barChatInput.value.trim();
             if (!message) return;
-            
+
             this.barChatInput.value = '';
             this.barSendBtn.classList.remove('active');
             this.chatInputBar.classList.remove('expanded');
             this.openPanel();
-            
+
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
-            
+
             this.sendMessage(message);
         }
         
@@ -2299,31 +2337,33 @@ ${poweredByHTML}
             this.isPanelOpen = true;
             this.chatPanel.classList.add('visible');
             this.chatWidgetBubble.classList.add('chat-open');
-            this.chatInputBar.classList.add('hidden');
-            
+            if (this.chatInputBar) {
+                this.chatInputBar.classList.add('hidden');
+            }
+
             // Prevent body scroll on mobile
             document.body.classList.add('sw-chat-open');
-            
+
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) badge.style.display = 'none';
-            
+
             // Show quick questions on first open (timestamp only appears after first Q&A pair)
             if (this.messageHistory.length === 0) {
                 this.renderQuickQuestions();
             }
-            
+
             setTimeout(() => this.panelChatInput.focus(), 500);
         }
-        
+
         closePanel() {
             this.isPanelOpen = false;
             this.chatPanel.classList.remove('visible');
             this.chatWidgetBubble.classList.remove('chat-open');
-            
+
             // Re-enable body scroll
             document.body.classList.remove('sw-chat-open');
-            
-            if (!this.isBarDismissed) {
+
+            if (this.chatInputBar && !this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
             }
         }
