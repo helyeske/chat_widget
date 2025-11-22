@@ -729,12 +729,11 @@
             gap: 16px;
             padding: 8px 0;
             animation: sw-fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.12s ease-in;
         }
 
         .sw-quick-questions-section.hidden {
             opacity: 0;
-            transform: translateY(-10px);
             pointer-events: none;
         }
 
@@ -1925,7 +1924,7 @@ ${poweredByHTML}
 
         // Upward motion (Stage 2)
         unifiedRise: 700,
-        headerFadeStart: 400,
+        headerFadeStart: 200,
 
         // Cleanup
         cleanupDelay: 100,
@@ -2518,8 +2517,8 @@ ${poweredByHTML}
         hideQuickQuestions() {
             const section = document.querySelector('.sw-quick-questions-section');
             if (section) {
-                section.classList.add('hidden');
-                setTimeout(() => section.remove(), 300);
+                // Instant removal - no fade animation to prevent friction
+                section.remove();
             }
         }
         
@@ -2955,6 +2954,7 @@ ${poweredByHTML}
             morph.style.width = bubbleRect.width + 'px';
             morph.style.height = bubbleRect.height + 'px';
             morph.style.borderRadius = '50%';
+            morph.style.filter = 'blur(0px)';  // Initial state - no blur
 
             document.body.appendChild(morph);
 
@@ -2974,7 +2974,7 @@ ${poweredByHTML}
             this.isPanelOpen = true;
             panel.style.visibility = 'visible'; // Make visible but positioned below
             panel.style.opacity = '0';  // Start transparent
-            panel.style.transform = 'translateY(calc(100% + 50px)) scale(0.98)';  // Position below viewport
+            panel.style.transform = 'translateY(calc(100% + 50px))';  // Position below viewport
             panel.style.transition = 'none';  // Disable transitions initially
             panel.classList.add('visible');
 
@@ -3010,7 +3010,7 @@ ${poweredByHTML}
                         // STAGE 1: Hold circle (user sees emoji clearly)
                         setTimeout(() => {
                             // Enable transitions for width/height/left changes to expand leftward
-                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease';
+                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease, filter 0.15s ease-out';
 
                             // STAGE 2: Expand to pill LEFTWARD (keeping right edge anchored)
                             setTimeout(() => {
@@ -3025,6 +3025,7 @@ ${poweredByHTML}
                                 morph.style.width = requiredPillWidth + 'px';
                                 morph.style.height = headerRect.height + 'px';
                                 morph.style.borderRadius = '999px';
+                                morph.style.filter = 'blur(0.4px 0px)';  // Horizontal blur during expansion
                             }, ANIMATION_TIMING.transitionEnable);
 
                             // STAGE 3: UNIFIED upward motion - pill + panel rise together
@@ -3032,25 +3033,24 @@ ${poweredByHTML}
                                 // Premium easing curve for buttery-smooth deceleration
                                 const premiumEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
-                                // Animate pill upward with fade out at the end
-                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.3s ease 0.4s`;  // Fade out last 300ms
+                                // Animate pill upward with fade out from start
+                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.5s ${premiumEasing}, filter 0.15s ease-out`;
                                 morph.style.left = headerRect.left + 'px';
                                 morph.style.top = headerRect.top + 'px';
                                 morph.style.opacity = '0';  // Fade out as it reaches top
+                                morph.style.filter = 'blur(0px 0.6px)';  // Vertical blur during upward motion
 
                                 // Simultaneously animate panel upward (slide from below)
-                                panel.style.transition = `transform 0.7s ${premiumEasing}, opacity 0.7s ease`;
-                                panel.style.transform = 'translateY(0) scale(1)';  // Slide up + scale to full size
+                                panel.style.transition = `transform 0.7s ${premiumEasing}, opacity 0.4s ${premiumEasing}`;
+                                panel.style.transform = 'translateY(0)';  // Slide up to final position
                                 panel.style.opacity = '1';  // Fade in during slide
                                 panel.style.pointerEvents = '';
 
-                                // Fade in real header during the last part of animation (smooth crossfade)
-                                setTimeout(() => {
-                                    if (header) {
-                                        header.style.transition = 'opacity 0.3s ease';
-                                        header.classList.remove('hidden-during-animation');
-                                    }
-                                }, ANIMATION_TIMING.headerFadeStart);
+                                // Fade in real header during upward motion (smooth crossfade with CSS delay)
+                                if (header) {
+                                    header.style.transition = `opacity 0.4s ${premiumEasing} 0.2s`;  // 400ms fade with 200ms delay
+                                    header.classList.remove('hidden-during-animation');
+                                }
                             }, ANIMATION_TIMING.pillExpansionTotal);
 
                             // STAGE 4: Complete animation
@@ -3073,6 +3073,7 @@ ${poweredByHTML}
 
             // Remove morphing element
             if (morph && morph.parentNode) {
+                morph.style.filter = 'blur(0px)';  // Clear blur for crisp final state
                 morph.remove();
             }
 
@@ -3167,9 +3168,14 @@ ${poweredByHTML}
         closePanel() {
             this.isPanelOpen = false;
 
-            // Premium exit animation: scale down + slide + fade
-            this.chatPanel.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease';
-            this.chatPanel.style.transform = 'scale(0.95) translateY(20px)';
+            // Device-adaptive animation: faster and simpler on mobile
+            const isMobile = window.innerWidth <= 768;
+            const closeDuration = isMobile ? 180 : 200;  // Snappy on both devices
+            const closeEasing = 'cubic-bezier(0.4, 0, 1, 1)';  // Accelerating ease-in
+
+            // Premium exit animation: scale down + slide + fade (simplified on mobile)
+            this.chatPanel.style.transition = `transform ${closeDuration}ms ${closeEasing}, opacity ${closeDuration}ms ease-in`;
+            this.chatPanel.style.transform = isMobile ? 'translateY(30px)' : 'scale(0.95) translateY(20px)';
             this.chatPanel.style.opacity = '0';
 
             // Complete exit, then clean up
@@ -3184,7 +3190,7 @@ ${poweredByHTML}
                 this.chatPanel.style.transform = '';  // Clear transform from slide animation
                 this.chatPanel.style.transition = '';  // Clear custom transitions
                 this.chatPanel.style.pointerEvents = '';
-            }, 300);
+            }, closeDuration);
 
             this.chatWidgetBubble.classList.remove('chat-open');
 
