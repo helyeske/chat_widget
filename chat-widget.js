@@ -2213,11 +2213,15 @@ ${poweredByHTML}
 
             // Bind events for bubble - always use animation (discovery moment)
             this.chatWidgetBubble.addEventListener('click', () => {
-                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                if (prefersReducedMotion) {
+                const animationTier = this.getAnimationTier();
+
+                if (animationTier === 'instant') {
                     this.openPanelImmediate();
+                } else if (animationTier === 'fast') {
+                    // Mobile/tablet/small screens always use fast animation
+                    this.openPanelWithFastAnimation();
                 } else {
-                    // Session-based animation: full animation on first open, fast on subsequent
+                    // Desktop: Session-based animation - full on first open, fast on subsequent
                     const hasOpenedThisSession = sessionStorage.getItem('sw_widget_opened_this_session');
 
                     if (!hasOpenedThisSession) {
@@ -2682,6 +2686,46 @@ ${poweredByHTML}
             }
         }
 
+        getAnimationTier() {
+            // Determine animation complexity based on device capabilities
+            const width = window.innerWidth;
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            // Instant for reduced motion preference
+            if (prefersReducedMotion) return 'instant';
+
+            // Fast animation for mobile devices and small screens
+            if (isMobile || width < 1024) return 'fast';
+
+            // Full complex animation for desktop
+            return 'full';
+        }
+
+        preventBodyScroll() {
+            // Save current scroll position to prevent page jump on mobile
+            this.scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Apply scroll lock with position preservation
+            document.body.classList.add('sw-chat-open');
+
+            // On mobile, maintain scroll position visually
+            if (window.innerWidth <= 768) {
+                document.body.style.top = `-${this.scrollPosition}px`;
+            }
+        }
+
+        restoreBodyScroll() {
+            // Remove scroll lock
+            document.body.classList.remove('sw-chat-open');
+
+            // Restore scroll position on mobile
+            if (window.innerWidth <= 768 && this.scrollPosition !== undefined) {
+                document.body.style.top = '';
+                window.scrollTo(0, this.scrollPosition);
+            }
+        }
+
         openPanelImmediate() {
             this.isPanelOpen = true;
             this.chatPanel.classList.add('visible');
@@ -2690,8 +2734,8 @@ ${poweredByHTML}
                 this.chatInputBar.classList.add('hidden');
             }
 
-            // Prevent body scroll on mobile
-            document.body.classList.add('sw-chat-open');
+            // Prevent body scroll on mobile (with position preservation)
+            this.preventBodyScroll();
 
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) {
@@ -2707,7 +2751,10 @@ ${poweredByHTML}
                 this.renderQuickQuestions();
             }
 
-            setTimeout(() => this.panelChatInput.focus(), 500);
+            // Focus input on desktop only (prevents unwanted scroll on mobile)
+            if (window.innerWidth > 768) {
+                setTimeout(() => this.panelChatInput.focus(), 500);
+            }
         }
 
         openPanelWithAnimation() {
@@ -2839,7 +2886,7 @@ ${poweredByHTML}
             if (this.chatInputBar) {
                 this.chatInputBar.classList.add('hidden');
             }
-            document.body.classList.add('sw-chat-open');
+            this.preventBodyScroll();
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) {
                 badge.style.transition = 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
@@ -2975,7 +3022,8 @@ ${poweredByHTML}
 
             // Focus input and reset animation flag
             setTimeout(() => {
-                if (this.panelChatInput) {
+                // Focus input on desktop only (prevents unwanted scroll on mobile)
+                if (this.panelChatInput && window.innerWidth > 768) {
                     this.panelChatInput.focus();
                 }
                 this.isAnimating = false;
@@ -2997,7 +3045,7 @@ ${poweredByHTML}
             if (this.chatInputBar) {
                 this.chatInputBar.classList.add('hidden');
             }
-            document.body.classList.add('sw-chat-open');
+            this.preventBodyScroll();
             const badge = document.querySelector('.sw-bubble-badge');
             if (badge) {
                 badge.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
@@ -3027,7 +3075,8 @@ ${poweredByHTML}
             setTimeout(() => {
                 panel.style.transition = '';
                 panel.style.transform = '';
-                if (this.panelChatInput) {
+                // Focus input on desktop only (prevents unwanted scroll on mobile)
+                if (this.panelChatInput && window.innerWidth > 768) {
                     this.panelChatInput.focus();
                 }
                 this.isAnimating = false;
@@ -3065,8 +3114,8 @@ ${poweredByHTML}
             // Restore widget icon in bubble (cleared during animation)
             this.chatWidgetBubble.innerHTML = CONFIG.branding.widgetIcon + '<span class="sw-bubble-badge" aria-label="New messages available">1</span>';
 
-            // Re-enable body scroll
-            document.body.classList.remove('sw-chat-open');
+            // Re-enable body scroll (with position restoration on mobile)
+            this.restoreBodyScroll();
 
             if (this.chatInputBar && !this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
