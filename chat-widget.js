@@ -52,7 +52,7 @@
         // Branding & Customization
         branding: {
             botName: 'Zsanett AI',
-            botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
+            botAvatar: 'chatbot_icon.jpg',  // Used in panel header and bot messages - can be emoji or image URL
             widgetIcon: '<svg viewBox="0 0 30 30" fill="none"><g clip-path="url(#clip0_114_14)"><path d="M8 14H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 18H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 5H7.5C6.50544 5 5.55161 5.39509 4.84835 6.09835C4.14509 6.80161 3.75 7.75544 3.75 8.75V18.75C3.75 19.7446 4.14509 20.6984 4.84835 21.4017C5.55161 22.1049 6.50544 22.5 7.5 22.5H10V26.25L16.25 22.5H22.5C23.4946 22.5 24.4484 22.1049 25.1517 21.4017C25.8549 20.6984 26.25 19.7446 26.25 18.75V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.8462 11.5391L21.9846 13.0615L20.4609 16.923L18.9385 13.0615L15.077 11.5391L18.9385 10.0154L20.4609 6.15381L21.9846 10.0154L25.8462 11.5391Z" fill="currentColor"/><path d="M26.8337 11.5846C26.8337 11.8226 26.6867 12.0396 26.464 12.1265C26.464 12.1265 23.5345 12.5931 22.3994 13.801C21.2643 15.0089 20.9587 17.6318 20.9587 17.6318C20.9155 17.7405 20.8407 17.8336 20.7439 17.8993C20.6472 17.9649 20.533 18 20.4161 18C20.2992 18 20.185 17.9649 20.0883 17.8993C19.9915 17.8336 19.9167 17.7405 19.8735 17.6318C19.8735 17.6318 19.4886 14.8555 18.3166 13.6834C17.1445 12.5114 14.3682 12.1265 14.3682 12.1265C14.2595 12.0833 14.1664 12.0085 14.1007 11.9117C14.0351 11.815 14 11.7008 14 11.5839C14 11.467 14.0351 11.3528 14.1007 11.2561C14.1664 11.1593 14.2595 11.0845 14.3682 11.0413C14.3682 11.0413 17.1445 10.6564 18.3166 9.48438C19.4886 8.31235 19.8735 5.53596 19.8735 5.53596C19.9167 5.42733 19.9915 5.33417 20.0883 5.26853C20.185 5.20289 20.2992 5.1678 20.4161 5.1678C20.533 5.1678 20.6472 5.20289 20.7439 5.26853C20.8407 5.33417 20.9155 5.42733 20.9587 5.53596C20.9587 5.53596 21.3436 8.31235 22.5156 9.48438C23.6877 10.6564 26.464 11.0413 26.464 11.0413C26.5727 11.0848 26.666 11.1597 26.7318 11.2565C26.7977 11.3533 26.8331 11.4675 26.8337 11.5846ZM24.6592 11.5846L21.8534 10.4771C21.779 10.4475 21.7115 10.4031 21.6549 10.3465C21.5983 10.2899 21.5539 10.2224 21.5243 10.148L20.4182 7.34075L19.3093 10.148C19.2799 10.2223 19.2356 10.2897 19.1793 10.3463C19.123 10.4028 19.0557 10.4473 18.9816 10.4771L16.173 11.5832L18.9816 12.6921C19.0556 12.7217 19.1228 12.766 19.1791 12.8223C19.2354 12.8786 19.2797 12.9458 19.3093 13.0198L20.4168 15.8284L21.5243 13.0198C21.5541 12.9457 21.5986 12.8784 21.6551 12.8221C21.7117 12.7658 21.7791 12.7215 21.8534 12.6921L24.6592 11.5846ZM28 6.33405C28 6.33405 26.8941 6.59145 26.4094 7.07612C25.9248 7.5608 25.6674 8.66669 25.6674 8.66669C25.6674 8.66669 25.4089 7.56076 24.9239 7.07612C24.439 6.59166 23.3333 6.33405 23.3333 6.33405C23.3333 6.33405 24.4392 6.07666 24.9239 5.59197C25.4089 5.10693 25.666 4 25.666 4C25.666 4 25.9235 5.10571 26.408 5.59057C26.893 6.07594 28 6.33405 28 6.33405Z" fill="currentColor"/></g><defs><clipPath id="clip0_114_14"><rect width="30" height="30" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
             colors: {
                 primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
@@ -222,6 +222,23 @@
             /* Button Colors (Fixed) */
             --sw-button-disabled: #d1d5db;
             --sw-button-disabled-text: #a1a1aa;
+
+            /* Animation Timing (Premium consistency) */
+            --sw-timing-instant: 0.15s;
+            --sw-timing-fast: 0.2s;
+            --sw-timing-normal: 0.35s;
+            --sw-timing-slow: 0.5s;
+
+            /* Easing Functions (Premium feel) */
+            --sw-ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+            --sw-ease-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
+            --sw-ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+            /* Shadow System (4-tier hierarchy) */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.16);
         }
         `;
     }
@@ -247,23 +264,23 @@
             transform: translateX(-50%) scale(1);
             background: white;
             border-radius: 40px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
             padding: 6px 12px;
             display: flex;
             align-items: center;
             gap: 8px;
             width: 320px;
-            transition: 
-                transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.25s ease;
+            transition:
+                transform var(--sw-timing-normal) var(--sw-ease-bounce),
+                width var(--sw-timing-normal) var(--sw-ease-premium),
+                box-shadow var(--sw-timing-fast) ease;
             pointer-events: all;
             will-change: transform, width;
         }
 
         .sw-chat-input-bar:hover:not(.expanding) {
             transform: translateX(-50%) scale(1.02);
-            box-shadow: 0 6px 32px rgba(0, 0, 0, 0.18);
+            box-shadow: var(--shadow-xl);
         }
 
         .sw-chat-input-bar:not(:hover) {
@@ -278,18 +295,18 @@
         .sw-chat-input-bar.expanded:hover:not(.expanding) {
             transform: translateX(-50%) scale(1.02);
         }
-        
+
         .sw-chat-input-bar.expanded:not(:hover) {
             transform: translateX(-50%) scale(1);
         }
 
         .sw-chat-input-bar.expanding {
-            transition: 
-                transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-                width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s ease;
+            transition:
+                transform var(--sw-timing-slow) var(--sw-ease-bounce),
+                width var(--sw-timing-slow) var(--sw-ease-premium),
+                box-shadow var(--sw-timing-normal) ease;
         }
-        
+
         .sw-chat-input-bar.expanding:hover {
             transform: translateX(-50%) scale(1.01);
         }
@@ -298,9 +315,9 @@
             opacity: 0;
             transform: translateX(-50%) translateY(120%) scale(0.95);
             pointer-events: none;
-            transition: 
-                opacity 0.3s ease,
-                transform 0.4s cubic-bezier(0.4, 0, 0.6, 1);
+            transition:
+                opacity var(--sw-timing-normal) ease,
+                transform var(--sw-timing-normal) var(--sw-ease-premium);
         }
 
         .sw-chat-input-bar.hidden:hover {
@@ -328,7 +345,11 @@
             color: var(--sw-primary);
             font-size: 18px;
             cursor: default;
-            transition: all 0.2s;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-chat-avatar-mini:hover {
+            transform: scale(1.08);
         }
 
         .sw-chat-avatar-mini svg {
@@ -362,7 +383,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.25s;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
             flex-shrink: 0;
             overflow: hidden;
         }
@@ -378,12 +399,12 @@
         .sw-bar-icon-btn.send-btn.active {
             background: var(--sw-primary); /* Primary color when active */
             color: white;
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bar-icon-btn.send-btn.active:hover {
-            transform: scale(1.08);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            transform: scale(1.03);
+            box-shadow: var(--shadow-md);
         }
 
         .sw-bar-icon-btn.close-btn {
@@ -410,20 +431,20 @@
             height: 56px;
             border-radius: 50%;
             background: var(--sw-primary);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             color: white;
             font-size: 28px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all var(--sw-timing-normal) var(--sw-ease-premium);
             pointer-events: all;
         }
 
         .sw-chat-widget-bubble:hover {
-            transform: scale(1.08);
-            box-shadow: 0 6px 28px rgba(139, 92, 246, 0.5);
+            transform: scale(1.04);
+            box-shadow: var(--shadow-xl);
         }
 
         .sw-chat-widget-bubble:active {
@@ -479,13 +500,17 @@
             border-radius: 32px;
             box-shadow:
                 0 0 0 1px rgba(0, 0, 0, 0.05),
-                0 20px 60px rgba(0, 0, 0, 0.2);
+                var(--shadow-md);
             display: flex;
             flex-direction: column;
             opacity: 0;
             transform: scale(0.92) translateY(30px);
             pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+            transition:
+                transform var(--sw-timing-normal) var(--sw-ease-bounce),
+                opacity var(--sw-timing-normal) ease,
+                box-shadow var(--sw-timing-normal) ease;
+            will-change: transform, opacity;
             z-index: 10000;
             padding: 8px;
             gap: 8px;
@@ -495,6 +520,9 @@
             opacity: 1;
             transform: scale(1) translateY(0);
             pointer-events: all;
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                var(--shadow-xl);
         }
 
         /* LAYER 2: White Main Chat Card */
@@ -502,9 +530,7 @@
             flex: 1;
             background: var(--sw-card-bg);
             border-radius: 24px;
-            box-shadow:
-                0 2px 8px rgba(0, 0, 0, 0.04),
-                0 1px 2px rgba(0, 0, 0, 0.03);
+            box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -523,7 +549,7 @@
 
             /* Sizing: Compact pill */
             width: auto;
-            max-width: calc(80% - 60px);
+            max-width: calc(100% - 80px);  /* Increased from 80% - 60px for more text space */
 
             /* Pill shape: Fully rounded */
             border-radius: 999px;
@@ -536,9 +562,7 @@
             color: white;
 
             /* Shadow: Elevated floating effect */
-            box-shadow:
-                0 8px 24px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-lg);
 
             /* Layout */
             display: flex;
@@ -564,8 +588,9 @@
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             flex-shrink: 0;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
         }
 
         .sw-chat-header-title {
@@ -601,7 +626,7 @@
             align-items: center;
             justify-content: center;
 
-            transition: all 0.25s ease;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
             flex-shrink: 0;
         }
 
@@ -617,7 +642,7 @@
         .sw-header-minimize-btn svg {
             width: 18px;
             height: 18px;
-            transition: all 0.25s ease;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
         /* Header Background Zone with Gradient Fade */
@@ -704,10 +729,13 @@
             gap: 16px;
             padding: 8px 0;
             animation: sw-fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .sw-quick-questions-section.hidden {
-            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
         }
 
         @keyframes sw-fadeSlideIn {
@@ -761,18 +789,34 @@
             font-size: 14px;
             color: var(--sw-text-primary);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background var(--sw-timing-normal) var(--sw-ease-premium),
+                        border-color var(--sw-timing-normal) var(--sw-ease-premium),
+                        box-shadow var(--sw-timing-normal) var(--sw-ease-premium),
+                        transform var(--sw-timing-normal) var(--sw-ease-premium);
             font-family: inherit;
             text-align: left;
             width: auto;
             max-width: 90%;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+            animation: sw-questionStagger 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Stagger animation keyframe - fade-in + slide for premium feel */
+        @keyframes sw-questionStagger {
+            0% {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .sw-quick-question-btn::before {
@@ -784,7 +828,7 @@
             height: 100%;
             background: rgba(17, 24, 39, 0.04); /* Neutral grey - works with any primary color */
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity var(--sw-timing-normal) ease;
             z-index: 0;
         }
 
@@ -801,9 +845,9 @@
         }
 
         .sw-quick-question-btn:hover {
-            transform: translateX(-4px) translateY(-2px);
+            transform: translateX(-4px) translateY(-2px) scale(1.02);
             border-color: var(--sw-primary-light);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Neutral shadow - works with any primary color */
+            box-shadow: var(--shadow-md);
         }
 
         .sw-quick-question-btn:hover::before {
@@ -812,7 +856,7 @@
 
         .sw-quick-question-btn:active {
             transform: translateX(-2px) translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Neutral shadow - works with any primary color */
+            box-shadow: var(--shadow-sm);
         }
 
         /* Messages */
@@ -820,7 +864,7 @@
             display: flex;
             flex-direction: column;
             max-width: 85%;
-            animation: sw-messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: sw-messageSlideIn var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
         @keyframes sw-messageSlideIn {
@@ -859,7 +903,26 @@
             color: var(--sw-primary);
             font-size: 18px;
             flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-message-avatar:hover {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sw-message-avatar img,
+        .sw-chat-logo img,
+        .sw-morph-icon img,
+        .sw-bubble-bot-icon-inner img,
+        .sw-chat-avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            transition: opacity var(--sw-timing-fast) var(--sw-ease-smooth);
         }
 
         .sw-message-content {
@@ -872,13 +935,13 @@
             word-break: break-word;
             overflow-wrap: break-word;
             max-width: 100%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bot-message .sw-message-content {
             background: var(--sw-message-bot-bg);
             color: var(--sw-text-primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bot-message .sw-message-content ul {
@@ -1231,6 +1294,210 @@
         .sw-chat-widget-bubble:focus-visible {
             outline: 4px solid var(--sw-primary);
             outline-offset: 4px;
+        }
+
+        /* ========================================
+           PREMIUM OPENING ANIMATION
+           ======================================== */
+
+        /* Morphing Element - Transforms from bubble to header pill */
+        .sw-morph-element {
+            position: fixed;
+            z-index: 999999;
+            pointer-events: none;
+            will-change: width, height, border-radius, left, top;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--sw-primary);
+            color: white;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* Initial circle state: no gap, text takes no space */
+        .sw-morph-element.circle-state {
+            gap: 0;
+            padding: 10px;
+        }
+
+        /* Pill state: has gap for spacing */
+        .sw-morph-element.pill-state {
+            gap: 10px;
+            padding: 10px 16px 10px 10px;
+        }
+
+        .sw-morph-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-morph-text {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            opacity: 0;
+            max-width: 0;
+            overflow: hidden;
+            transition:
+                opacity var(--sw-timing-normal) ease,
+                max-width var(--sw-timing-normal) ease;
+        }
+
+        .sw-morph-element.show-text .sw-morph-text {
+            opacity: 1;
+            max-width: 300px;  /* Increased from 200px to accommodate longer names */
+        }
+
+        /* Panel reveal animation */
+        @keyframes sw-panelFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .sw-chat-panel.animating-in {
+            animation: sw-panelFadeIn 0.6s ease forwards;
+        }
+
+        /* Hide elements during animation */
+        .sw-chat-header.hidden-during-animation {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .sw-chat-widget-bubble.hidden-during-animation {
+            opacity: 0 !important;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* ========================================
+           CLICK ANIMATION: Bounce & Icon Swap
+           ======================================== */
+
+        /* Stage 1: Click press - Button depression */
+        @keyframes sw-bubbleClickPress {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(0.92);
+            }
+        }
+
+        /* Stage 2: Elastic bounce with overshoot */
+        @keyframes sw-bubbleBounceUp {
+            0% {
+                transform: scale(0.92);
+            }
+            60% {
+                transform: scale(1.08);
+            }
+            100% {
+                transform: scale(1.0);
+            }
+        }
+
+        /* Widget icon fades out during bounce */
+        @keyframes sw-widgetIconFadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+        }
+
+        /* Bot icon fades in during bounce */
+        @keyframes sw-botIconFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Classes to trigger animations */
+        .sw-chat-widget-bubble.clicking {
+            animation: sw-bubbleClickPress 250ms cubic-bezier(0.34, 0.1, 0.5, 1) forwards;
+        }
+
+        .sw-chat-widget-bubble.bouncing {
+            animation: sw-bubbleBounceUp 400ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+        }
+
+        /* Icon container inside bubble during animation */
+        .sw-bubble-widget-icon {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: sw-widgetIconFadeOut 200ms ease forwards;
+            animation-play-state: paused;
+        }
+
+        .sw-bubble-widget-icon.animating {
+            animation-play-state: running;
+        }
+
+        .sw-bubble-bot-icon-click {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: sw-botIconFadeIn 200ms ease forwards;
+            animation-play-state: paused;
+        }
+
+        .sw-bubble-bot-icon-click.animating {
+            animation-play-state: running;
+        }
+
+        /* Inner icon with background circle - matches .sw-morph-icon */
+        .sw-bubble-bot-icon-inner {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         /* Accessibility: Reduced Motion Support */
@@ -1657,6 +1924,7 @@ ${poweredByHTML}
             this.streamingBuffer = { content: '', messageId: null };
             this.userIsScrolling = false;
             this.scrollTimeout = null;
+            this.isAnimating = false;
             this.init();
         }
         
@@ -1666,6 +1934,25 @@ ${poweredByHTML}
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
+
+        // Helper function to detect if botAvatar is an image URL
+        isImageUrl(str) {
+            return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(str);
+        }
+
+        // Helper function to render bot avatar (image or emoji)
+        renderBotAvatar(container) {
+            const avatarContent = CONFIG.branding.botAvatar;
+
+            if (this.isImageUrl(avatarContent)) {
+                const img = document.createElement('img');
+                img.src = avatarContent;
+                img.alt = CONFIG.branding.botName;
+                container.appendChild(img);
+            } else {
+                container.textContent = avatarContent;
+            }
         }
 
         // ========================================
@@ -1902,6 +2189,13 @@ ${poweredByHTML}
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
 
+            // Populate chat logo with bot avatar (image or emoji)
+            const chatLogo = this.chatPanel.querySelector('.sw-chat-logo');
+            if (chatLogo) {
+                chatLogo.innerHTML = '';  // Clear template placeholder
+                this.renderBotAvatar(chatLogo);
+            }
+
             // Bind events for bar (only if bar is enabled)
             if (this.chatInputBar && this.barChatInput && this.barSendBtn && this.barCloseBtn) {
                 this.barChatInput.addEventListener('focus', () => this.expandBar());
@@ -1917,8 +2211,25 @@ ${poweredByHTML}
                 this.barCloseBtn.addEventListener('click', () => this.dismissBar());
             }
 
-            // Bind events for bubble
-            this.chatWidgetBubble.addEventListener('click', () => this.openPanel());
+            // Bind events for bubble - always use animation (discovery moment)
+            this.chatWidgetBubble.addEventListener('click', () => {
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (prefersReducedMotion) {
+                    this.openPanelImmediate();
+                } else {
+                    // Session-based animation: full animation on first open, fast on subsequent
+                    const hasOpenedThisSession = sessionStorage.getItem('sw_widget_opened_this_session');
+
+                    if (!hasOpenedThisSession) {
+                        // First open this session - show full premium animation
+                        this.openPanelWithAnimation();
+                        sessionStorage.setItem('sw_widget_opened_this_session', 'true');
+                    } else {
+                        // Subsequent opens - fast streamlined animation
+                        this.openPanelWithFastAnimation();
+                    }
+                }
+            });
             
             // Bind events for panel
             this.panelChatInput.addEventListener('keydown', (e) => {
@@ -2032,7 +2343,7 @@ ${poweredByHTML}
             this.chatMessages.appendChild(separator);
         }
         
-        renderQuickQuestions() {
+        renderQuickQuestions(fastMode = false) {
             const existingSection = document.querySelector('.sw-quick-questions-section');
             if (existingSection) existingSection.remove();
 
@@ -2062,33 +2373,44 @@ ${poweredByHTML}
             }
 
             section.appendChild(header);
-            
+
             const list = document.createElement('div');
             list.className = 'sw-quick-questions-list';
             list.setAttribute('role', 'list');
-            
+
+            // Use shorter delays for fast mode (second open)
+            const baseDelay = fastMode ? 0.1 : 1.3;
+            const incrementDelay = fastMode ? 0.05 : 0.1;
+
             CONFIG.quickQuestions.forEach((question, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'sw-quick-question-btn';
                 btn.setAttribute('role', 'listitem');
                 btn.setAttribute('aria-label', question.text);
-                btn.style.animationDelay = `${index * 0.1}s`;
-                
+                btn.style.animationDelay = `${baseDelay + (index * incrementDelay)}s`;
+                btn.style.opacity = '0';
+
                 const textSpan = document.createElement('span');
                 textSpan.className = 'question-text';
                 textSpan.textContent = question.text;
                 btn.appendChild(textSpan);
-                
+
                 const emojiSpan = document.createElement('span');
                 emojiSpan.className = 'question-emoji';
                 emojiSpan.textContent = question.emoji;
                 emojiSpan.setAttribute('aria-hidden', 'true');
                 btn.appendChild(emojiSpan);
-                
+
+                // Clear animation after completion to allow hover transforms to work
+                btn.addEventListener('animationend', () => {
+                    btn.style.opacity = '1';  // Lock in final opacity
+                    btn.style.animation = 'none';  // Remove animation to unblock hover
+                }, { once: true });
+
                 btn.addEventListener('click', () => this.sendQuickQuestion(question.text));
                 list.appendChild(btn);
             });
-            
+
             section.appendChild(list);
             this.chatMessages.appendChild(section);
         }
@@ -2123,13 +2445,14 @@ ${poweredByHTML}
             this.barChatInput.value = '';
             this.barSendBtn.classList.remove('active');
             this.chatInputBar.classList.remove('expanded');
-            this.openPanel();
 
+            // Hide quick questions BEFORE opening panel to prevent flash
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
 
+            this.openPanelImmediate();  // Immediate open for task completion - no animation delay
             this.sendMessage(message);
         }
         
@@ -2347,6 +2670,18 @@ ${poweredByHTML}
         }
         
         openPanel() {
+            // Check if user prefers reduced motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // Use animation if not already animating and user doesn't prefer reduced motion
+            if (!prefersReducedMotion && !this.isAnimating) {
+                this.openPanelWithAnimation();
+            } else {
+                this.openPanelImmediate();
+            }
+        }
+
+        openPanelImmediate() {
             this.isPanelOpen = true;
             this.chatPanel.classList.add('visible');
             this.chatWidgetBubble.classList.add('chat-open');
@@ -2358,20 +2693,376 @@ ${poweredByHTML}
             document.body.classList.add('sw-chat-open');
 
             const badge = document.querySelector('.sw-bubble-badge');
-            if (badge) badge.style.display = 'none';
+            if (badge) {
+                badge.style.transition = 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
+                badge.style.opacity = '0';
+                badge.style.transform = 'scale(0)';
+                setTimeout(() => badge.style.display = 'none', 300);
+            }
 
             // Show quick questions on first open (timestamp only appears after first Q&A pair)
-            if (this.messageHistory.length === 0) {
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
                 this.renderQuickQuestions();
             }
 
             setTimeout(() => this.panelChatInput.focus(), 500);
         }
 
+        openPanelWithAnimation() {
+            // Prevent multiple animations from running simultaneously
+            if (this.isAnimating) return;
+            this.isAnimating = true;
+
+            const bubble = this.chatWidgetBubble;
+            const panel = this.chatPanel;
+            const header = panel.querySelector('.sw-chat-header');
+
+            // ========================================
+            // STAGE 0: CLICK ANIMATION SEQUENCE
+            // ========================================
+
+            // Save original bubble content
+            const originalBubbleContent = bubble.innerHTML;
+
+            // Create icon containers for smooth transition
+            const widgetIconContainer = document.createElement('div');
+            widgetIconContainer.className = 'sw-bubble-widget-icon';
+            widgetIconContainer.innerHTML = originalBubbleContent;
+
+            const botIconContainer = document.createElement('div');
+            botIconContainer.className = 'sw-bubble-bot-icon-click';
+
+            // Create inner icon with background circle (matches morph icon)
+            const botIconInner = document.createElement('div');
+            botIconInner.className = 'sw-bubble-bot-icon-inner';
+            this.renderBotAvatar(botIconInner);
+
+            botIconContainer.appendChild(botIconInner);
+
+            // Replace bubble content with layered icons
+            bubble.innerHTML = '';
+            bubble.appendChild(widgetIconContainer);
+            bubble.appendChild(botIconContainer);
+
+            // Force reflow
+            bubble.offsetHeight;
+
+            // STAGE 1: Click Press (250ms)
+            bubble.classList.add('clicking');
+
+            setTimeout(() => {
+                // Remove click class
+                bubble.classList.remove('clicking');
+
+                // STAGE 2: Bounce with Icon Swap (400ms)
+                bubble.classList.add('bouncing');
+
+                // Start icon swap animations at bounce start
+                setTimeout(() => {
+                    widgetIconContainer.classList.add('animating');
+                    botIconContainer.classList.add('animating');
+                }, 100); // Smoother delay for icon swap at bounce peak
+
+                setTimeout(() => {
+                    // Remove bounce class
+                    bubble.classList.remove('bouncing');
+
+                    // STAGE 3: Settle & Hold (200ms)
+                    // Clean up - restore bubble to final state
+                    bubble.innerHTML = '';
+                    bubble.style.opacity = '0'; // Ready to hide for morph
+
+                    // STAGE 4: Start Pill Expansion
+                    // Now create the morph element and continue with existing animation
+                    this.startPillExpansion(bubble, panel, header);
+
+                }, 400); // After bounce completes
+
+            }, 250); // After click press completes
+        }
+
+        startPillExpansion(bubble, panel, header) {
+            // Get bubble position
+            const bubbleRect = bubble.getBoundingClientRect();
+
+            // Create morphing element with bot emoji (not widget SVG)
+            const morph = document.createElement('div');
+            morph.className = 'sw-morph-element';
+
+            const morphIcon = document.createElement('div');
+            morphIcon.className = 'sw-morph-icon';
+            this.renderBotAvatar(morphIcon);
+
+            const morphText = document.createElement('span');
+            morphText.className = 'sw-morph-text';
+            morphText.textContent = CONFIG.branding.botName;
+
+            morph.appendChild(morphIcon);
+            morph.appendChild(morphText);
+
+            // Set initial circle state - NO transitions yet
+            morph.classList.add('circle-state');
+            morph.style.transition = 'none';
+            morph.style.left = bubbleRect.left + 'px';
+            morph.style.top = bubbleRect.top + 'px';
+            morph.style.width = bubbleRect.width + 'px';
+            morph.style.height = bubbleRect.height + 'px';
+            morph.style.borderRadius = '50%';
+
+            document.body.appendChild(morph);
+
+            // Force reflow to ensure initial state is rendered
+            morph.offsetHeight;
+
+            // Hide original bubble
+            bubble.classList.add('hidden-during-animation');
+
+            // Render quick questions BEFORE animation so content is already laid out
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
+                this.renderQuickQuestions();
+            }
+
+            // Position panel below viewport for slide-up animation
+            this.isPanelOpen = true;
+            panel.style.visibility = 'visible'; // Make visible but positioned below
+            panel.style.opacity = '0';  // Start transparent
+            panel.style.transform = 'translateY(calc(100% + 50px)) scale(0.98)';  // Position below viewport
+            panel.style.transition = 'none';  // Disable transitions initially
+            panel.classList.add('visible');
+
+            if (header) header.classList.add('hidden-during-animation');
+
+            // Hide floating bar and badge
+            if (this.chatInputBar) {
+                this.chatInputBar.classList.add('hidden');
+            }
+            document.body.classList.add('sw-chat-open');
+            const badge = document.querySelector('.sw-bubble-badge');
+            if (badge) {
+                badge.style.transition = 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
+                badge.style.opacity = '0';
+                badge.style.transform = 'scale(0)';
+                setTimeout(() => badge.style.display = 'none', 300);
+            }
+
+            // Calculate header position - triple RAF for better layout settling
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {  // Triple RAF for stable position
+                        if (!header) {
+                            this.finishAnimation(morph, bubble, panel, header);
+                            return;
+                        }
+
+                        const headerRect = header.getBoundingClientRect();
+
+                        // DYNAMIC WIDTH CALCULATION: Measure text width to fit any bot name
+                        const measureTextWidth = (text) => {
+                            const tempSpan = document.createElement('span');
+                            tempSpan.style.visibility = 'hidden';
+                            tempSpan.style.position = 'absolute';
+                            tempSpan.style.whiteSpace = 'nowrap';
+                            tempSpan.style.fontSize = '16px';
+                            tempSpan.style.fontWeight = '600';
+                            tempSpan.style.letterSpacing = '-0.02em';
+                            tempSpan.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif';
+                            tempSpan.textContent = text;
+                            document.body.appendChild(tempSpan);
+                            const width = tempSpan.getBoundingClientRect().width;
+                            document.body.removeChild(tempSpan);
+                            return width;
+                        };
+
+                        // Calculate required pill width dynamically based on bot name
+                        const textWidth = measureTextWidth(CONFIG.branding.botName);
+                        const iconWidth = 36; // .sw-morph-icon width
+                        const gap = 10; // gap between icon and text
+                        const paddingLeft = 10; // pill-state padding-left
+                        const paddingRight = 16; // pill-state padding-right
+                        const requiredPillWidth = iconWidth + gap + textWidth + paddingLeft + paddingRight;
+
+                        // STAGE 1: Hold circle for 200ms (user sees emoji clearly)
+                        setTimeout(() => {
+                            // Enable transitions for width/height/left changes to expand leftward
+                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease';
+
+                            // STAGE 2: Expand to pill LEFTWARD (keeping right edge anchored)
+                            setTimeout(() => {
+                                morph.classList.remove('circle-state');
+                                morph.classList.add('pill-state', 'show-text');
+
+                                // Calculate new left position to keep right edge fixed
+                                // Using dynamically calculated width instead of header width
+                                const newLeft = bubbleRect.right - requiredPillWidth;
+
+                                morph.style.left = newLeft + 'px';
+                                morph.style.width = requiredPillWidth + 'px';
+                                morph.style.height = headerRect.height + 'px';
+                                morph.style.borderRadius = '999px';
+                            }, 20);
+
+                            // STAGE 3: UNIFIED upward motion - pill + panel rise together (700ms)
+                            setTimeout(() => {
+                                // Premium easing curve for buttery-smooth deceleration
+                                const premiumEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+                                // Animate pill upward with fade out at the end
+                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.3s ease 0.4s`;  // Fade out last 300ms
+                                morph.style.left = headerRect.left + 'px';
+                                morph.style.top = headerRect.top + 'px';
+                                morph.style.opacity = '0';  // Fade out as it reaches top
+
+                                // Simultaneously animate panel upward (slide from below)
+                                panel.style.transition = `transform 0.7s ${premiumEasing}, opacity 0.7s ease`;
+                                panel.style.transform = 'translateY(0) scale(1)';  // Slide up + scale to full size
+                                panel.style.opacity = '1';  // Fade in during slide
+                                panel.style.pointerEvents = '';
+
+                                // Fade in real header during the last part of animation (smooth crossfade)
+                                setTimeout(() => {
+                                    if (header) {
+                                        header.style.transition = 'opacity 0.3s ease';
+                                        header.classList.remove('hidden-during-animation');
+                                    }
+                                }, 400);  // Start fading in header after 400ms (when morph starts fading out)
+                            }, 520);
+
+                            // STAGE 4: Complete animation
+                            setTimeout(() => {
+                                this.finishAnimation(morph, bubble, panel, header);
+                            }, 1400);  // Reduced from 1700ms (200 + 500 + 700 = 1400ms)
+
+                        }, 200);
+                    });
+                });
+            });
+        }
+
+        finishAnimation(morph, bubble, panel, header) {
+            // Show real header
+            if (header) {
+                header.classList.remove('hidden-during-animation');
+                header.style.transition = '';  // Clear inline transition
+            }
+
+            // Remove morphing element
+            if (morph && morph.parentNode) {
+                morph.remove();
+            }
+
+            // Update bubble state
+            bubble.classList.remove('hidden-during-animation');
+            bubble.classList.add('chat-open');
+
+            // Clean up panel inline styles to prevent conflicts
+            panel.classList.remove('animating-in');
+            panel.style.transform = '';  // Clear inline transform, let CSS take over
+            panel.style.transition = '';  // Clear inline transition
+
+            // Quick questions already rendered before animation started
+
+            // Re-bind close button (ensure it works)
+            this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+            if (this.panelCloseBtn) {
+                // Remove old listener if exists and add fresh one
+                this.panelCloseBtn.replaceWith(this.panelCloseBtn.cloneNode(true));
+                this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+                this.panelCloseBtn.addEventListener('click', () => this.closePanel());
+            }
+
+            // Focus input and reset animation flag
+            setTimeout(() => {
+                if (this.panelChatInput) {
+                    this.panelChatInput.focus();
+                }
+                this.isAnimating = false;
+            }, 100);
+        }
+
+        openPanelWithFastAnimation() {
+            // Streamlined animation for repeat opens within same session (~600ms total)
+            if (this.isAnimating) return;
+            this.isAnimating = true;
+
+            const bubble = this.chatWidgetBubble;
+            const panel = this.chatPanel;
+
+            // Hide bubble immediately
+            bubble.classList.add('chat-open');
+
+            // Hide floating bar and badge
+            if (this.chatInputBar) {
+                this.chatInputBar.classList.add('hidden');
+            }
+            document.body.classList.add('sw-chat-open');
+            const badge = document.querySelector('.sw-bubble-badge');
+            if (badge) {
+                badge.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                badge.style.opacity = '0';
+                badge.style.transform = 'scale(0)';
+                setTimeout(() => badge.style.display = 'none', 200);
+            }
+
+            // Render quick questions if needed - use fast mode for second open
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
+                this.renderQuickQuestions(true);  // Fast mode
+            }
+
+            // Fast panel animation: shorter duration, less transform
+            this.isPanelOpen = true;
+            panel.classList.add('visible');
+            panel.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease';
+
+            // Panel starts slightly below and scaled down
+            requestAnimationFrame(() => {
+                panel.style.transform = 'scale(1) translateY(0)';
+                panel.style.opacity = '1';
+            });
+
+            // Clean up and focus
+            setTimeout(() => {
+                panel.style.transition = '';
+                panel.style.transform = '';
+                if (this.panelChatInput) {
+                    this.panelChatInput.focus();
+                }
+                this.isAnimating = false;
+            }, 450);
+        }
+
         closePanel() {
             this.isPanelOpen = false;
-            this.chatPanel.classList.remove('visible');
+
+            // Premium exit animation: scale down + slide + fade
+            this.chatPanel.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease';
+            this.chatPanel.style.transform = 'scale(0.95) translateY(20px)';
+            this.chatPanel.style.opacity = '0';
+
+            // Complete exit, then clean up
+            setTimeout(() => {
+                this.chatPanel.classList.remove('visible');
+                this.chatPanel.classList.remove('animating-in');  // Remove animation class
+
+                // CRITICAL FIX: Clear inline styles set during animation
+                // These inline styles override CSS classes, preventing proper closing
+                this.chatPanel.style.visibility = '';
+                this.chatPanel.style.opacity = '';
+                this.chatPanel.style.transform = '';  // Clear transform from slide animation
+                this.chatPanel.style.transition = '';  // Clear custom transitions
+                this.chatPanel.style.pointerEvents = '';
+            }, 300);
+
             this.chatWidgetBubble.classList.remove('chat-open');
+
+            // Clear bubble inline styles to make it visible again
+            this.chatWidgetBubble.style.opacity = '';
+            this.chatWidgetBubble.style.visibility = '';
+
+            // Restore widget icon in bubble (cleared during animation)
+            this.chatWidgetBubble.innerHTML = CONFIG.branding.widgetIcon + '<span class="sw-bubble-badge" aria-label="New messages available">1</span>';
 
             // Re-enable body scroll
             document.body.classList.remove('sw-chat-open');
@@ -2403,7 +3094,7 @@ ${poweredByHTML}
                 const avatar = document.createElement('div');
                 avatar.className = 'sw-message-avatar';
                 avatar.setAttribute('aria-hidden', 'true');
-                avatar.textContent = CONFIG.branding.botAvatar;
+                this.renderBotAvatar(avatar);
                 wrapper.appendChild(avatar);
                 
                 const contentDiv = document.createElement('div');
@@ -2437,19 +3128,19 @@ ${poweredByHTML}
             const avatar = document.createElement('div');
             avatar.className = 'sw-message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
-            avatar.textContent = CONFIG.branding.botAvatar;
+            this.renderBotAvatar(avatar);
             wrapper.appendChild(avatar);
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'sw-message-content';
             contentDiv.textContent = content;
             wrapper.appendChild(contentDiv);
-            
+
             messageDiv.appendChild(wrapper);
             this.chatMessages.appendChild(messageDiv);
             this.scrollToBottom();
         }
-        
+
         updateMessage(messageId, content) {
             const messageDiv = document.getElementById(messageId);
             if (!messageDiv) return;
