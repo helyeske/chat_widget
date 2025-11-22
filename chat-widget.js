@@ -2446,9 +2446,10 @@ ${poweredByHTML}
             this.barSendBtn.classList.remove('active');
             this.chatInputBar.classList.remove('expanded');
 
-            // Hide quick questions BEFORE opening panel to prevent flash
+            // Remove quick questions immediately (no timeout) to prevent them appearing in panel
             if (!this.firstMessageSent) {
-                this.hideQuickQuestions();
+                const section = document.querySelector('.sw-quick-questions-section');
+                if (section) section.remove();  // Immediate removal, no race condition
                 this.firstMessageSent = true;
             }
 
@@ -3069,6 +3070,13 @@ ${poweredByHTML}
 
             if (this.chatInputBar && !this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
+            }
+
+            // Clear chat content if panel was opened but no conversation happened
+            // This prevents FAQ buttons from persisting as "zombies" in the DOM
+            if (this.messageHistory.length === 0) {
+                this.chatMessages.innerHTML = '';
+                this.firstMessageSent = false;
             }
         }
         
