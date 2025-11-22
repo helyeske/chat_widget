@@ -462,30 +462,6 @@
             height: 36px;
         }
 
-        /* Notification Badge */
-        .sw-bubble-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            border: 2px solid white;
-            animation: sw-badgePulse 2s infinite;
-        }
-
-        @keyframes sw-badgePulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-        }
-
         /* LAYER 1: Grey Outer Container Card */
         .sw-chat-panel {
             position: fixed;
@@ -1796,7 +1772,6 @@
         <!-- Persistent Chat Widget Bubble -->
         <div id="sw-chat-widget-bubble" class="sw-chat-widget-bubble" role="button" aria-label="Open chat" tabindex="0">
             ${CONFIG.branding.widgetIcon}
-            <span class="sw-bubble-badge" aria-label="New messages available">1</span>
         </div>
 
         <!-- Chat Panel with 3-Layer Hierarchy -->
@@ -2832,14 +2807,6 @@ ${poweredByHTML}
             // Prevent body scroll on mobile (with position preservation)
             this.preventBodyScroll();
 
-            const badge = document.querySelector('.sw-bubble-badge');
-            if (badge) {
-                badge.style.transition = 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
-                badge.style.opacity = '0';
-                badge.style.transform = 'scale(0)';
-                setTimeout(() => badge.style.display = 'none', 300);
-            }
-
             // Show quick questions on first open (timestamp only appears after first Q&A pair)
             // But NOT when sending from floating bar (firstMessageSent will be true)
             if (this.messageHistory.length === 0 && !this.firstMessageSent) {
@@ -2980,18 +2947,11 @@ ${poweredByHTML}
 
             if (header) header.classList.add('hidden-during-animation');
 
-            // Hide floating bar and badge
+            // Hide floating bar
             if (this.chatInputBar) {
                 this.chatInputBar.classList.add('hidden');
             }
             this.preventBodyScroll();
-            const badge = document.querySelector('.sw-bubble-badge');
-            if (badge) {
-                badge.style.transition = 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1)';
-                badge.style.opacity = '0';
-                badge.style.transform = 'scale(0)';
-                setTimeout(() => badge.style.display = 'none', 300);
-            }
 
             // Calculate header position - triple RAF for better layout settling
             requestAnimationFrame(() => {
@@ -3121,19 +3081,11 @@ ${poweredByHTML}
             // Hide bubble immediately
             bubble.classList.add('chat-open');
 
-            // Hide floating bar and badge
+            // Hide floating bar
             if (this.chatInputBar) {
                 this.chatInputBar.classList.add('hidden');
             }
             this.preventBodyScroll();
-            const badge = document.querySelector('.sw-bubble-badge');
-            const badgeFadeDuration = 200;
-            if (badge) {
-                badge.style.transition = `opacity ${badgeFadeDuration}ms ease, transform ${badgeFadeDuration}ms ease`;
-                badge.style.opacity = '0';
-                badge.style.transform = 'scale(0)';
-                setTimeout(() => badge.style.display = 'none', badgeFadeDuration);
-            }
 
             // Render quick questions if needed - use fast mode for second open
             // But NOT when sending from floating bar (firstMessageSent will be true)
@@ -3199,7 +3151,7 @@ ${poweredByHTML}
             this.chatWidgetBubble.style.visibility = '';
 
             // Restore widget icon in bubble (cleared during animation)
-            this.chatWidgetBubble.innerHTML = CONFIG.branding.widgetIcon + '<span class="sw-bubble-badge" aria-label="New messages available">1</span>';
+            this.chatWidgetBubble.innerHTML = CONFIG.branding.widgetIcon;
 
             // Re-enable body scroll (with position restoration on mobile)
             this.restoreBodyScroll();
