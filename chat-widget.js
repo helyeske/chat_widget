@@ -1910,6 +1910,46 @@ ${poweredByHTML}
     }
     
     // ========================================
+    // ANIMATION TIMING CONFIGURATION
+    // ========================================
+    const ANIMATION_TIMING = {
+        // Click sequence (Stage 0)
+        clickPress: 250,
+        bounce: 400,
+        iconSwapDelay: 100,
+
+        // Pill expansion (Stage 1)
+        circleHold: 200,
+        transitionEnable: 20,
+        pillExpansion: 500,
+
+        // Upward motion (Stage 2)
+        unifiedRise: 700,
+        headerFadeStart: 400,
+
+        // Cleanup
+        cleanupDelay: 100,
+
+        // Fast animation
+        fastPanelSlide: 400,
+        fastCleanupDelay: 50,
+
+        // Derived values (auto-calculated)
+        get clickSequenceTotal() {
+            return this.clickPress + this.bounce;
+        },
+
+        get pillExpansionTotal() {
+            return this.transitionEnable + this.pillExpansion;
+        },
+
+        get fullAnimationTotal() {
+            return this.clickSequenceTotal + this.circleHold +
+                   this.pillExpansionTotal + this.unifiedRise;
+        }
+    };
+
+    // ========================================
     // CHAT WIDGET CLASS
     // ========================================
     class ChatWidget {
@@ -1924,7 +1964,34 @@ ${poweredByHTML}
             this.streamingBuffer = { content: '', messageId: null };
             this.userIsScrolling = false;
             this.scrollTimeout = null;
-            this.isAnimating = false;
+            this.isAnimating = false; // Legacy flag, kept for compatibility
+
+            // Animation guard for robust state management
+            this.animationLock = {
+                isLocked: false,
+                currentAnimation: null,
+
+                acquire: function(animationName) {
+                    if (this.isLocked) {
+                        console.warn(`[ChatWidget] Animation blocked: ${animationName} (current: ${this.currentAnimation})`);
+                        return false;
+                    }
+                    this.isLocked = true;
+                    this.currentAnimation = animationName;
+                    return true;
+                },
+
+                release: function() {
+                    this.isLocked = false;
+                    this.currentAnimation = null;
+                },
+
+                forceRelease: function() {
+                    console.warn('[ChatWidget] Force releasing animation lock');
+                    this.release();
+                }
+            };
+
             this.init();
         }
         
@@ -1934,6 +2001,32 @@ ${poweredByHTML}
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
+
+        // Calculate and cache pill width for morphing animation
+        calculateAndCachePillWidth() {
+            // Use Canvas API for fast, non-DOM text measurement
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif';
+
+            const textWidth = ctx.measureText(CONFIG.branding.botName).width;
+
+            // Calculate total pill width (must match CSS values)
+            const iconWidth = 36; // .sw-morph-icon width
+            const gap = 10; // gap between icon and text
+            const paddingLeft = 10; // pill-state padding-left
+            const paddingRight = 16; // pill-state padding-right
+
+            const pillWidth = iconWidth + gap + textWidth + paddingLeft + paddingRight;
+
+            // Cache in CSS custom property for use in animations
+            document.documentElement.style.setProperty('--sw-cached-pill-width', `${pillWidth}px`);
+
+            // Also cache for JavaScript access
+            this.cachedPillWidth = pillWidth;
+
+            return pillWidth;
         }
 
         // Helper function to detect if botAvatar is an image URL
@@ -2195,6 +2288,9 @@ ${poweredByHTML}
                 chatLogo.innerHTML = '';  // Clear template placeholder
                 this.renderBotAvatar(chatLogo);
             }
+
+            // Pre-calculate pill width for smooth animations (eliminates layout thrashing)
+            this.calculateAndCachePillWidth();
 
             // Bind events for bar (only if bar is enabled)
             if (this.chatInputBar && this.barChatInput && this.barSendBtn && this.barCloseBtn) {
@@ -2759,7 +2855,9 @@ ${poweredByHTML}
 
         openPanelWithAnimation() {
             // Prevent multiple animations from running simultaneously
-            if (this.isAnimating) return;
+            if (!this.animationLock.acquire('full-open')) return;
+
+            // Keep legacy flag for compatibility
             this.isAnimating = true;
 
             const bubble = this.chatWidgetBubble;
@@ -2796,27 +2894,27 @@ ${poweredByHTML}
             // Force reflow
             bubble.offsetHeight;
 
-            // STAGE 1: Click Press (250ms)
+            // STAGE 1: Click Press
             bubble.classList.add('clicking');
 
             setTimeout(() => {
                 // Remove click class
                 bubble.classList.remove('clicking');
 
-                // STAGE 2: Bounce with Icon Swap (400ms)
+                // STAGE 2: Bounce with Icon Swap
                 bubble.classList.add('bouncing');
 
                 // Start icon swap animations at bounce start
                 setTimeout(() => {
                     widgetIconContainer.classList.add('animating');
                     botIconContainer.classList.add('animating');
-                }, 100); // Smoother delay for icon swap at bounce peak
+                }, ANIMATION_TIMING.iconSwapDelay);
 
                 setTimeout(() => {
                     // Remove bounce class
                     bubble.classList.remove('bouncing');
 
-                    // STAGE 3: Settle & Hold (200ms)
+                    // STAGE 3: Settle & Hold
                     // Clean up - restore bubble to final state
                     bubble.innerHTML = '';
                     bubble.style.opacity = '0'; // Ready to hide for morph
@@ -2825,9 +2923,9 @@ ${poweredByHTML}
                     // Now create the morph element and continue with existing animation
                     this.startPillExpansion(bubble, panel, header);
 
-                }, 400); // After bounce completes
+                }, ANIMATION_TIMING.bounce);
 
-            }, 250); // After click press completes
+            }, ANIMATION_TIMING.clickPress);
         }
 
         startPillExpansion(bubble, panel, header) {
@@ -2906,32 +3004,10 @@ ${poweredByHTML}
 
                         const headerRect = header.getBoundingClientRect();
 
-                        // DYNAMIC WIDTH CALCULATION: Measure text width to fit any bot name
-                        const measureTextWidth = (text) => {
-                            const tempSpan = document.createElement('span');
-                            tempSpan.style.visibility = 'hidden';
-                            tempSpan.style.position = 'absolute';
-                            tempSpan.style.whiteSpace = 'nowrap';
-                            tempSpan.style.fontSize = '16px';
-                            tempSpan.style.fontWeight = '600';
-                            tempSpan.style.letterSpacing = '-0.02em';
-                            tempSpan.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif';
-                            tempSpan.textContent = text;
-                            document.body.appendChild(tempSpan);
-                            const width = tempSpan.getBoundingClientRect().width;
-                            document.body.removeChild(tempSpan);
-                            return width;
-                        };
+                        // Use cached pill width (calculated once at init for performance)
+                        const requiredPillWidth = this.cachedPillWidth;
 
-                        // Calculate required pill width dynamically based on bot name
-                        const textWidth = measureTextWidth(CONFIG.branding.botName);
-                        const iconWidth = 36; // .sw-morph-icon width
-                        const gap = 10; // gap between icon and text
-                        const paddingLeft = 10; // pill-state padding-left
-                        const paddingRight = 16; // pill-state padding-right
-                        const requiredPillWidth = iconWidth + gap + textWidth + paddingLeft + paddingRight;
-
-                        // STAGE 1: Hold circle for 200ms (user sees emoji clearly)
+                        // STAGE 1: Hold circle (user sees emoji clearly)
                         setTimeout(() => {
                             // Enable transitions for width/height/left changes to expand leftward
                             morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease';
@@ -2949,9 +3025,9 @@ ${poweredByHTML}
                                 morph.style.width = requiredPillWidth + 'px';
                                 morph.style.height = headerRect.height + 'px';
                                 morph.style.borderRadius = '999px';
-                            }, 20);
+                            }, ANIMATION_TIMING.transitionEnable);
 
-                            // STAGE 3: UNIFIED upward motion - pill + panel rise together (700ms)
+                            // STAGE 3: UNIFIED upward motion - pill + panel rise together
                             setTimeout(() => {
                                 // Premium easing curve for buttery-smooth deceleration
                                 const premiumEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -2974,15 +3050,15 @@ ${poweredByHTML}
                                         header.style.transition = 'opacity 0.3s ease';
                                         header.classList.remove('hidden-during-animation');
                                     }
-                                }, 400);  // Start fading in header after 400ms (when morph starts fading out)
-                            }, 520);
+                                }, ANIMATION_TIMING.headerFadeStart);
+                            }, ANIMATION_TIMING.pillExpansionTotal);
 
                             // STAGE 4: Complete animation
                             setTimeout(() => {
                                 this.finishAnimation(morph, bubble, panel, header);
-                            }, 1400);  // Reduced from 1700ms (200 + 500 + 700 = 1400ms)
+                            }, ANIMATION_TIMING.fullAnimationTotal);
 
-                        }, 200);
+                        }, ANIMATION_TIMING.circleHold);
                     });
                 });
             });
@@ -3027,12 +3103,15 @@ ${poweredByHTML}
                     this.panelChatInput.focus();
                 }
                 this.isAnimating = false;
-            }, 100);
+                this.animationLock.release();
+            }, ANIMATION_TIMING.cleanupDelay);
         }
 
         openPanelWithFastAnimation() {
             // Streamlined animation for repeat opens within same session (~600ms total)
-            if (this.isAnimating) return;
+            if (!this.animationLock.acquire('fast-open')) return;
+
+            // Keep legacy flag for compatibility
             this.isAnimating = true;
 
             const bubble = this.chatWidgetBubble;
@@ -3047,11 +3126,12 @@ ${poweredByHTML}
             }
             this.preventBodyScroll();
             const badge = document.querySelector('.sw-bubble-badge');
+            const badgeFadeDuration = 200;
             if (badge) {
-                badge.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                badge.style.transition = `opacity ${badgeFadeDuration}ms ease, transform ${badgeFadeDuration}ms ease`;
                 badge.style.opacity = '0';
                 badge.style.transform = 'scale(0)';
-                setTimeout(() => badge.style.display = 'none', 200);
+                setTimeout(() => badge.style.display = 'none', badgeFadeDuration);
             }
 
             // Render quick questions if needed - use fast mode for second open
@@ -3080,7 +3160,8 @@ ${poweredByHTML}
                     this.panelChatInput.focus();
                 }
                 this.isAnimating = false;
-            }, 450);
+                this.animationLock.release();
+            }, ANIMATION_TIMING.fastPanelSlide + ANIMATION_TIMING.fastCleanupDelay);
         }
 
         closePanel() {
