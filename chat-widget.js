@@ -41,6 +41,15 @@
         return item && typeof item === 'object' && !Array.isArray(item);
     }
 
+    // ========================================
+    // CONVERSATION PERSISTENCE TTL PRESETS
+    // ========================================
+    const TTL_PRESETS = {
+        SHORT: 24 * 60 * 60 * 1000,       // 24 hours - for transactional sites
+        MEDIUM: 3 * 24 * 60 * 60 * 1000,   // 3 days - recommended default
+        LONG: 7 * 24 * 60 * 60 * 1000      // 7 days - for B2B/complex products
+    };
+
     const DEFAULT_CONFIG = {
         // API Configuration
         apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
@@ -87,6 +96,13 @@
             logoUrl: './favicon.svg'
         },
 
+        // Conversation Persistence Settings
+        persistence: {
+            enabled: true,                          // Enable/disable conversation persistence
+            conversationTTL: TTL_PRESETS.MEDIUM,    // Time-to-live: 3 days (default)
+            storageKey: 'chat_conversation'         // localStorage key
+        },
+
         // Rich Content Feature Flags (OFF by default for safety)
         enableRichContent: false,     // Master switch for all rich content features
         enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
@@ -114,6 +130,17 @@
         CONFIG = deepMerge(DEFAULT_CONFIG, normalizedConfig);
     } else {
         CONFIG = DEFAULT_CONFIG;
+    }
+
+    // Convert TTL preset strings to numeric values
+    if (CONFIG.persistence?.conversationTTL && typeof CONFIG.persistence.conversationTTL === 'string') {
+        const presetKey = CONFIG.persistence.conversationTTL.toUpperCase();
+        if (TTL_PRESETS[presetKey]) {
+            CONFIG.persistence.conversationTTL = TTL_PRESETS[presetKey];
+        } else {
+            console.warn(`[ChatWidget] Invalid TTL preset: ${CONFIG.persistence.conversationTTL}. Using default (MEDIUM).`);
+            CONFIG.persistence.conversationTTL = TTL_PRESETS.MEDIUM;
+        }
     }
 
     // Set quickQuestions at root level for backward compatibility with existing code
@@ -621,26 +648,143 @@
             transition: all var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
-        /* Header Background Zone with Gradient Fade */
+        /* New Chat Button - Secondary Action */
+        .sw-header-new-chat-btn {
+            position: absolute;
+            top: 24px; /* Aligned with pill vertical center */
+            left: 16px; /* Positioned on left for symmetric layout */
+            z-index: 4;
+
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+
+            /* Default: No background, subtle icon */
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+
+            color: var(--sw-text-secondary); /* Harmonizes with UI color system */
+            opacity: 0.7; /* More subtle as secondary action */
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
+            flex-shrink: 0;
+        }
+
+        .sw-header-new-chat-btn:hover {
+            /* Hover: Circle fades in smoothly */
+            background: rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: var(--sw-text-primary);
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        .sw-header-new-chat-btn svg {
+            width: 18px;
+            height: 18px;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
+        }
+
+        /* Header Background - Pure Motion Blur (Premium Frosted Glass) */
         .sw-header-background {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 100px;
+            height: 90px;
             z-index: 2;
 
+            /* Transparent base - no gradient background */
+            background: transparent;
+
+            pointer-events: none;
+        }
+
+        /* Layer 1: VERY aggressive white fade - content disappears fast */
+        .sw-header-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+
+            /* VERY aggressive white fade - content gone quickly */
             background: linear-gradient(
                 180deg,
                 #ffffff 0%,
-                #ffffff 50%,
-                rgba(255, 255, 255, 0.9) 60%,
-                rgba(255, 255, 255, 0.7) 75%,
-                rgba(255, 255, 255, 0.3) 90%,
-                rgba(255, 255, 255, 0) 100%
+                #ffffff 62%,                     /* Solid white (pill area) */
+                rgba(255, 255, 255, 0.95) 65%,  /* Start strong fade */
+                rgba(255, 255, 255, 0.75) 68%,
+                rgba(255, 255, 255, 0.50) 72%,  /* Half gone quickly */
+                rgba(255, 255, 255, 0.20) 76%,
+                rgba(255, 255, 255, 0.05) 80%,
+                transparent 84%                  /* Fully invisible */
             );
 
+            z-index: 1;
             pointer-events: none;
+        }
+
+        /* Layer 2: VERY STRONG immediate blur - no fade */
+        .sw-header-background::after {
+            content: '';
+            position: absolute;
+            top: 0px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+
+            background: transparent;
+
+            /* VERY STRONG blur - 28px for intense frosted glass */
+            backdrop-filter: blur(5px) saturate(115%);
+            -webkit-backdrop-filter: blur(5px) saturate(115%);
+
+            /* Simple on/off mask - blur at FULL STRENGTH where visible */
+            mask-image: linear-gradient(
+                180deg,
+                transparent 30%,
+                black 60%,
+                rgba(0, 0, 0, 0.8) 80%,  /* Fade blur out */
+                rgba(0, 0, 0, 0.4) 90%,
+                transparent 100%
+            );
+            -webkit-mask-image: linear-gradient(
+                180deg,
+                transparent 30%,
+                black 60%,
+                rgba(0, 0, 0, 0.8) 80%,  /* Fade blur out */
+                rgba(0, 0, 0, 0.4) 90%,
+                transparent 100%
+            );
+
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Fallback: Stronger gradient without blur */
+        @supports not (backdrop-filter: blur(1px)) {
+            .sw-header-background::before {
+                background: linear-gradient(
+                    180deg,
+                    #ffffff 0%,
+                    #ffffff 62%,
+                    rgba(255, 255, 255, 0.95) 65%,
+                    rgba(255, 255, 255, 0.82) 68%,
+                    rgba(255, 255, 255, 0.60) 72%,
+                    rgba(255, 255, 255, 0.30) 76%,
+                    rgba(255, 255, 255, 0.10) 80%,
+                    transparent 84%
+                );
+            }
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -648,7 +792,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 110px 20px 20px 20px;
+            padding: 100px 20px 20px 20px;  /* Increased from 85px for better breathing room below header */
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -1189,12 +1333,91 @@
             }
 
             .sw-header-background {
-                height: 80px;
+                height: 60px;
+
+                /* Transparent base - pure motion blur approach */
+                background: transparent;
+            }
+
+            /* Mobile Layer 1: VERY aggressive white fade */
+            .sw-header-background::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+
+                /* VERY aggressive white fade for mobile */
+                background: linear-gradient(
+                    180deg,
+                    #ffffff 0%,
+                    #ffffff 60%,                     /* Pill coverage */
+                    rgba(255, 255, 255, 0.88) 64%,
+                    rgba(255, 255, 255, 0.65) 68%,
+                    rgba(255, 255, 255, 0.35) 72%,
+                    rgba(255, 255, 255, 0.10) 76%,
+                    transparent 80%                  /* Content gone fast */
+                );
+
+                z-index: 1;
+                pointer-events: none;
+            }
+
+            /* Mobile Layer 2: VERY STRONG blur - immediate */
+            .sw-header-background::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+
+                background: transparent;
+
+                /* VERY STRONG mobile blur - 22px */
+                backdrop-filter: blur(22px) saturate(110%);
+                -webkit-backdrop-filter: blur(22px) saturate(110%);
+
+                /* Simple on/off mask - full blur strength */
+                mask-image: linear-gradient(
+                    180deg,
+                    transparent 0%,
+                    transparent 60%,
+                    black 62%,               /* IMMEDIATE full blur */
+                    black 100%               /* Keep full strength */
+                );
+                -webkit-mask-image: linear-gradient(
+                    180deg,
+                    transparent 0%,
+                    transparent 60%,
+                    black 62%,
+                    black 100%
+                );
+
+                z-index: 2;
+                pointer-events: none;
+            }
+
+            /* Mobile fallback */
+            @supports not (backdrop-filter: blur(1px)) {
+                .sw-header-background::before {
+                    background: linear-gradient(
+                        180deg,
+                        #ffffff 0%,
+                        #ffffff 60%,
+                        rgba(255, 255, 255, 0.92) 64%,
+                        rgba(255, 255, 255, 0.72) 68%,
+                        rgba(255, 255, 255, 0.42) 72%,
+                        rgba(255, 255, 255, 0.15) 76%,
+                        transparent 80%
+                    );
+                }
             }
 
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
-                padding: 90px 16px 16px 16px;
+                padding: 88px 16px 16px 16px;  /* Increased from 75px for better breathing room below header */
                 overflow-x: hidden; /* ADD: Prevent horizontal scroll */
                 -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
@@ -1789,6 +2012,14 @@
                     </div>
                 </div>
 
+                <!-- External New Chat Button -->
+                <button id="sw-panel-new-chat-btn" class="sw-header-new-chat-btn" title="Start a new conversation" aria-label="Start a new conversation">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <line x1="8" y1="3" x2="8" y2="13"/>
+                        <line x1="3" y1="8" x2="13" y2="8"/>
+                    </svg>
+                </button>
+
                 <!-- External Minimize Button -->
                 <button id="sw-panel-close-btn" class="sw-header-minimize-btn" title="Minimize chat" aria-label="Minimize chat">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
@@ -1975,6 +2206,109 @@ ${poweredByHTML}
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
+
+        // ========================================
+        // CONVERSATION PERSISTENCE METHODS
+        // ========================================
+
+        saveConversation() {
+            if (!CONFIG.persistence?.enabled) return;
+
+            try {
+                const data = {
+                    messageHistory: this.messageHistory,
+                    sessionId: this.sessionId,
+                    lastActivity: Date.now(),
+                    version: 1  // For future compatibility
+                };
+                localStorage.setItem(CONFIG.persistence.storageKey, JSON.stringify(data));
+            } catch (error) {
+                console.warn('[ChatWidget] Failed to save conversation:', error);
+            }
+        }
+
+        loadConversation() {
+            if (!CONFIG.persistence?.enabled) return false;
+
+            try {
+                const stored = localStorage.getItem(CONFIG.persistence.storageKey);
+                if (!stored) return false;
+
+                const data = JSON.parse(stored);
+
+                // Validate data structure
+                if (!data || !data.messageHistory || !data.sessionId || !data.lastActivity) {
+                    console.warn('[ChatWidget] Invalid stored conversation data');
+                    localStorage.removeItem(CONFIG.persistence.storageKey);
+                    return false;
+                }
+
+                // Check TTL
+                const age = Date.now() - data.lastActivity;
+                if (age > CONFIG.persistence.conversationTTL) {
+                    console.log('[ChatWidget] Conversation expired, starting fresh');
+                    localStorage.removeItem(CONFIG.persistence.storageKey);
+                    return false;
+                }
+
+                // Restore conversation state
+                this.messageHistory = data.messageHistory;
+                this.sessionId = data.sessionId;
+                this.firstMessageSent = data.messageHistory.length > 0;
+
+                console.log(`[ChatWidget] Restored conversation with ${data.messageHistory.length} messages`);
+                return true;
+            } catch (error) {
+                console.warn('[ChatWidget] Failed to load conversation:', error);
+                localStorage.removeItem(CONFIG.persistence.storageKey);
+                return false;
+            }
+        }
+
+        restoreMessagesUI() {
+            // Re-render messages from history
+            this.messageHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    this.addMessageToUI(msg.content, 'user');
+                } else if (msg.role === 'bot') {
+                    this.addMessageToUI(msg.content, 'bot');
+                }
+            });
+        }
+
+        addMessageToUI(content, sender) {
+            // Helper to add message DOM without modifying messageHistory
+            const messageDiv = document.createElement('article');
+            messageDiv.className = `sw-message sw-${sender}-message`;
+            messageDiv.setAttribute('role', 'article');
+            messageDiv.setAttribute('aria-label', `${sender === 'bot' ? 'AI' : 'User'} message`);
+            messageDiv.id = `msg-${Date.now()}-${Math.random()}`;
+
+            if (sender === 'bot') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'sw-message-wrapper';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'sw-message-avatar';
+                avatar.setAttribute('aria-hidden', 'true');
+                this.renderBotAvatar(avatar);
+                wrapper.appendChild(avatar);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'sw-message-content';
+                contentDiv.textContent = content;
+                wrapper.appendChild(contentDiv);
+
+                messageDiv.appendChild(wrapper);
+            } else {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'sw-message-content';
+                contentDiv.textContent = content;
+                messageDiv.appendChild(contentDiv);
+            }
+
+            this.chatMessages.appendChild(messageDiv);
         }
 
         // Calculate and cache pill width for morphing animation
@@ -2255,6 +2589,7 @@ ${poweredByHTML}
             this.panelChatInput = document.getElementById('sw-panel-chat-input');
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+            this.panelNewChatBtn = document.getElementById('sw-panel-new-chat-btn');
 
             // Populate chat logo with bot avatar (image or emoji)
             const chatLogo = this.chatPanel.querySelector('.sw-chat-logo');
@@ -2265,6 +2600,13 @@ ${poweredByHTML}
 
             // Pre-calculate pill width for smooth animations (eliminates layout thrashing)
             this.calculateAndCachePillWidth();
+
+            // Load conversation from localStorage if available
+            const conversationLoaded = this.loadConversation();
+            if (conversationLoaded && this.messageHistory.length > 0) {
+                // Restore message UI from loaded history
+                this.restoreMessagesUI();
+            }
 
             // Bind events for bar (only if bar is enabled)
             if (this.chatInputBar && this.barChatInput && this.barSendBtn && this.barCloseBtn) {
@@ -2321,6 +2663,7 @@ ${poweredByHTML}
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
+            this.panelNewChatBtn.addEventListener('click', () => this.startNewChat());
 
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
@@ -2508,7 +2851,13 @@ ${poweredByHTML}
             this.chatMessages.innerHTML = '';
             this.firstMessageSent = false;
             this.sessionId = this.generateUUID();
-            this.renderQuickQuestions();
+
+            // Clear localStorage (for conversation persistence)
+            if (CONFIG.persistence?.enabled) {
+                localStorage.removeItem(CONFIG.persistence.storageKey);
+            }
+
+            this.renderQuickQuestions(true);  // Use fast mode for intentional resets
         }
         
         async sendFromBar() {
@@ -2733,10 +3082,17 @@ ${poweredByHTML}
                     const finalContent = this.streamingBuffer.content;
                     const msgId = this.streamingBuffer.messageId;
                     this.updateMessage(msgId, finalContent);
+
+                    // Add bot response to message history and persist
+                    const contentText = typeof finalContent === 'string' ? finalContent : JSON.stringify(finalContent);
+                    this.messageHistory.push({ role: 'bot', content: contentText, time: new Date() });
+                    this.saveConversation();
                 } else {
                     // Check if we got any content
                     console.error('[Chatbot] No content extracted from stream');
                     this.updateMessage(messageId, '⚠️ No content received from stream');
+                    this.messageHistory.push({ role: 'bot', content: '⚠️ No content received from stream', time: new Date() });
+                    this.saveConversation();
                 }
             }
 
@@ -3169,11 +3525,23 @@ ${poweredByHTML}
         }
         
         addMessage(content, sender) {
-            // Add timestamp before user message if completing a pair
-            if (sender === 'user' && this.messageHistory.length > 0) {
-                const lastMessage = this.messageHistory[this.messageHistory.length - 1];
-                if (lastMessage.role === 'bot') {
+            // Add timestamp before user message
+            if (sender === 'user') {
+                if (this.messageHistory.length === 0) {
+                    // First user message - always show timestamp
                     this.addTimestamp();
+                } else {
+                    // Subsequent messages - check if last was bot and 5+ mins passed
+                    const lastMessage = this.messageHistory[this.messageHistory.length - 1];
+                    if (lastMessage.role === 'bot') {
+                        // Only show timestamp if 5+ minutes have passed
+                        const timeSinceLastMessage = Date.now() - new Date(lastMessage.time).getTime();
+                        const FIVE_MINUTES = 5 * 60 * 1000;
+
+                        if (timeSinceLastMessage >= FIVE_MINUTES) {
+                            this.addTimestamp();
+                        }
+                    }
                 }
             }
             
@@ -3208,6 +3576,7 @@ ${poweredByHTML}
             
             this.chatMessages.appendChild(messageDiv);
             this.messageHistory.push({ role: sender, content, time: new Date() });
+            this.saveConversation();  // Persist conversation to localStorage
             this.scrollToBottom();
         }
         
@@ -3324,15 +3693,17 @@ ${poweredByHTML}
         
         addTimestamp() {
             const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB', { 
-                day: '2-digit', 
-                month: 'short', 
-                year: 'numeric' 
-            }) + ', ' + now.toLocaleTimeString('en-GB', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            // Format: "2025 Nov 15, 14:13"
+            const year = now.getFullYear();
+            const month = now.toLocaleDateString('en-US', { month: 'short' });
+            const day = now.getDate();
+            const time = now.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
             });
-            
+            const dateStr = `${year} ${month} ${day}, ${time}`;
+
             const timestamp = document.createElement('div');
             timestamp.className = 'sw-timestamp-separator';
             timestamp.setAttribute('role', 'separator');
