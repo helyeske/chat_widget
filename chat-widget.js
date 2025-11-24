@@ -43,7 +43,7 @@
 
     const DEFAULT_CONFIG = {
         // API Configuration
-        apiEndpoint: 'https://ctm-chat.mark-helyes.workers.dev',
+        apiEndpoint: 'https://ctm-chat.fylio.workers.dev',
         retries: 2,
         timeoutMs: 20000,
         streamBatchIntervalMs: 200,
