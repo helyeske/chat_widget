@@ -994,7 +994,6 @@
 
         .sw-bot-message .sw-message-content li {
             margin: 6px 0;
-            color: #4b5563;
             padding-left: 20px;
             position: relative;
         }
@@ -1010,6 +1009,14 @@
             background: var(--sw-message-user-bg);
             color: white;
             box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        /* Streaming Buffer - Incomplete text during streaming */
+        .sw-streaming-buffer {
+            color: var(--sw-text-primary);
+            opacity: 0.7;
+            /* Smooth transition when buffer becomes formatted */
+            transition: opacity 0.2s ease;
         }
 
         /* Typing Indicator */
@@ -1639,10 +1646,12 @@
             list-style: none;
         }
 
-        .sw-message-content.markdown ul li {
+        /* Higher specificity to override legacy styles - ensures black text, not grey */
+        .sw-bot-message .sw-message-content.markdown ul li {
             position: relative;
             margin: 6px 0;
             padding-left: 8px;
+            color: var(--sw-text-primary);  /* Explicit black color */
         }
 
         .sw-message-content.markdown ul li::before {
@@ -1659,9 +1668,11 @@
             list-style: decimal;
         }
 
-        .sw-message-content.markdown ol li {
+        /* Higher specificity for ordered lists - ensures black text, not grey */
+        .sw-bot-message .sw-message-content.markdown ol li {
             margin: 6px 0;
             padding-left: 8px;
+            color: var(--sw-text-primary);  /* Explicit black color */
         }
 
         /* Nested lists */
@@ -2061,6 +2072,11 @@ ${poweredByHTML}
             this.scrollPending = false; // Prevent overlapping scroll requests
             this.isActivelyStreaming = false; // Track active streaming for auto-scroll behavior
             this.isAnimating = false; // Legacy flag, kept for compatibility
+            this.lastScrollTime = 0; // Throttle scroll updates
+            this.scrollThrottleDelay = 30; // Match chunk processing delay (30ms)
+            // New: Block-level rendering state
+            this.renderedContent = ''; // Already rendered and appended to DOM
+            this.pendingBuffer = ''; // Incomplete content waiting for completion
 
             // Animation guard for robust state management
             this.animationLock = {
@@ -2311,6 +2327,82 @@ ${poweredByHTML}
             ];
 
             return markdownPatterns.some(pattern => pattern.test(text));
+        }
+
+        hasMarkdownSyntax(text) {
+            // Check if text contains ANY markdown syntax
+            if (!text || typeof text !== 'string') return false;
+
+            const markdownPatterns = [
+                /^[-*+]\s/m,          // List item start
+                /^\d+\.\s/m,          // Numbered list start
+                /^#+\s/m,             // Header
+                /```/,                // Code block
+                /^>\s/m,              // Blockquote
+                /\*\*[^*]+\*\*/,      // Bold
+                /\*[^*\n]+\*/,        // Italic
+                /`[^`]+`/,            // Inline code
+                /\[.+\]\(.+\)/        // Links
+            ];
+
+            return markdownPatterns.some(pattern => pattern.test(text));
+        }
+
+        extractCompleteMarkdownBlocks(text) {
+            // Extract complete markdown blocks for progressive rendering
+            // Strategy: Mark content complete at sentence boundaries for smooth streaming
+            // Returns: { complete: string, incomplete: string }
+            if (!text || typeof text !== 'string') {
+                return { complete: '', incomplete: text || '' };
+            }
+
+            let complete = '';
+            let incomplete = '';
+
+            // Strategy 1: Find complete sentences (. ! ? followed by space or newline)
+            // EXCLUDE colons - they typically introduce lists/explanations that follow
+            const sentenceEndRegex = /([.!?][\s\n])/g;
+            let lastCompleteIndex = -1;
+            let match;
+
+            while ((match = sentenceEndRegex.exec(text)) !== null) {
+                lastCompleteIndex = match.index + match[0].length;
+            }
+
+            if (lastCompleteIndex > 0) {
+                // Found at least one complete sentence
+                complete = text.substring(0, lastCompleteIndex);
+                incomplete = text.substring(lastCompleteIndex);
+            } else {
+                // No complete sentences - try complete lines (newline-terminated)
+                const lines = text.split('\n');
+                if (lines.length > 1) {
+                    // All lines except the last are complete
+                    complete = lines.slice(0, -1).join('\n') + '\n';
+                    incomplete = lines[lines.length - 1];
+                } else {
+                    // Single line without sentence ending
+                    // Strategy 3: For long text, render all but last word
+                    if (text.length > 50) {
+                        const words = text.trim().split(/\s+/);
+                        if (words.length > 1) {
+                            const lastWord = words[words.length - 1];
+                            complete = text.substring(0, text.lastIndexOf(lastWord));
+                            incomplete = lastWord;
+                        } else {
+                            // Single word - keep as incomplete
+                            complete = '';
+                            incomplete = text;
+                        }
+                    } else {
+                        // Short text without punctuation - keep as incomplete
+                        complete = '';
+                        incomplete = text;
+                    }
+                }
+            }
+
+            return { complete, incomplete };
         }
 
         escapeHtml(text) {
@@ -2592,30 +2684,9 @@ ${poweredByHTML}
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
             this.panelNewChatBtn = document.getElementById('sw-panel-new-chat-btn');
 
-            // Setup MutationObserver for automatic scroll on content changes
-            this.scrollObserver = new MutationObserver(() => {
-                // Only auto-scroll during active streaming when user hasn't scrolled away
-                if (this.isActivelyStreaming && !this.userIsScrolling && !this.scrollPending) {
-                    this.scrollPending = true;
-                    requestAnimationFrame(() => {
-                        const sentinel = document.getElementById('sw-scroll-sentinel');
-                        if (sentinel) {
-                            sentinel.scrollIntoView({ behavior: 'instant', block: 'end', inline: 'nearest' });
-                        }
-                        this.scrollPending = false;
-                    });
-                }
-            });
-
-            // Start observing chat messages for content changes
-            if (this.chatMessages) {
-                this.scrollObserver.observe(this.chatMessages, {
-                    childList: true,      // Watch for added/removed nodes
-                    subtree: true,        // Watch all descendants
-                    characterData: true   // Watch for text content changes
-                });
-                console.log('[SCROLL] MutationObserver initialized for auto-scroll');
-            }
+            // Simplified scroll handling - no observers needed
+            // Scroll is triggered directly by rendering logic with throttling
+            console.log('[SCROLL] Simplified scroll mechanism initialized');
 
             // Populate chat logo with bot avatar (image or emoji)
             const chatLogo = this.chatPanel.querySelector('.sw-chat-logo');
@@ -2695,7 +2766,7 @@ ${poweredByHTML}
             window.addEventListener('scroll', () => this.handleScroll());
 
             // Detect user scrolling away from bottom during streaming
-            this.chatMessages.addEventListener('scroll', () => {
+            const handleUserScroll = () => {
                 // Only care about scroll position during active streaming
                 if (!this.isActivelyStreaming) {
                     return;
@@ -2713,6 +2784,26 @@ ${poweredByHTML}
                     clearTimeout(this.scrollTimeout);
 
                     // Resume auto-scroll after user stops for 1 second
+                    this.scrollTimeout = setTimeout(() => {
+                        this.userIsScrolling = false;
+                    }, 1000);
+                }
+            };
+
+            this.chatMessages.addEventListener('scroll', handleUserScroll);
+
+            // Mobile: Detect touch interactions (user is manually scrolling)
+            this.chatMessages.addEventListener('touchstart', () => {
+                if (this.isActivelyStreaming) {
+                    this.userIsScrolling = true;
+                    clearTimeout(this.scrollTimeout);
+                }
+            });
+
+            this.chatMessages.addEventListener('touchend', () => {
+                if (this.isActivelyStreaming) {
+                    // Resume auto-scroll after 1 second of no touch
+                    clearTimeout(this.scrollTimeout);
                     this.scrollTimeout = setTimeout(() => {
                         this.userIsScrolling = false;
                     }, 1000);
@@ -3022,7 +3113,11 @@ ${poweredByHTML}
                 isStructured: false
             };
 
-            // Process queue: character-level streaming for true typewriter effect
+            // Reset block-level rendering state
+            this.renderedContent = '';
+            this.pendingBuffer = '';
+
+            // Process queue: Block-level streaming with incremental markdown rendering
             const processQueue = () => {
                 if (isProcessingQueue) {
                     return;
@@ -3043,48 +3138,94 @@ ${poweredByHTML}
                 isProcessingQueue = true;
                 const chunk = chunkQueue.shift();
 
-                // Split chunk into individual characters for typewriter effect
-                const characters = chunk.split('');
-                let charIndex = 0;
+                // Add chunk to total displayed content
+                displayedContent += chunk;
+                this.streamingBuffer.content = displayedContent;
 
-                const displayNextCharacter = () => {
-                    if (charIndex < characters.length) {
-                        // Add one character to displayed content
-                        displayedContent += characters[charIndex];
-                        this.streamingBuffer.content = displayedContent;
+                // NEW APPROACH: Block-level rendering
+                // Extract complete markdown blocks that can be safely rendered
+                const { complete, incomplete } = this.extractCompleteMarkdownBlocks(displayedContent);
 
-                        // PERFORMANCE: During streaming, set plain text directly
-                        // Avoids expensive markdown rendering on every character (30ms intervals)
-                        const messageDiv = document.getElementById(messageId);
-                        if (messageDiv) {
-                            const contentDiv = messageDiv.querySelector('.sw-message-content');
-                            if (contentDiv) {
-                                contentDiv.textContent = displayedContent;
-                                // MutationObserver triggers auto-scroll
+                const messageDiv = document.getElementById(messageId);
+                if (messageDiv) {
+                    const contentDiv = messageDiv.querySelector('.sw-message-content');
+                    if (contentDiv) {
+                        // Check if we have markdown syntax
+                        const hasMarkdown = this.hasMarkdownSyntax(displayedContent);
+
+                        if (hasMarkdown && CONFIG.enableMarkdown) {
+                            // Ensure markdown class is ALWAYS applied
+                            if (!contentDiv.classList.contains('markdown')) {
+                                contentDiv.classList.add('markdown');
                             }
+
+                            // TRUE APPEND-ONLY: Only render NEW complete content
+                            if (complete && complete !== this.renderedContent) {
+                                // Extract ONLY the new portion (avoid re-rendering)
+                                const newContent = complete.substring(this.renderedContent.length);
+
+                                if (newContent) {
+                                    // Remove old incomplete buffer before appending new content
+                                    const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
+                                    if (oldBuffer) {
+                                        oldBuffer.remove();
+                                    }
+
+                                    // Render and append ONLY the new content
+                                    const newHtml = this.renderMarkdown(newContent);
+                                    const newWrapper = document.createElement('span');
+                                    newWrapper.innerHTML = newHtml;
+                                    contentDiv.appendChild(newWrapper);
+
+                                    this.renderedContent = complete;
+                                    console.log('[Chatbot] Appended new complete block:', newContent.length, 'chars');
+                                }
+                            }
+
+                            // Update incomplete buffer (replace old one if exists)
+                            if (incomplete) {
+                                // Remove old buffer first
+                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
+                                if (oldBuffer) {
+                                    oldBuffer.remove();
+                                }
+
+                                // Add new buffer
+                                const bufferSpan = document.createElement('span');
+                                bufferSpan.className = 'sw-streaming-buffer';
+                                bufferSpan.textContent = incomplete;
+                                contentDiv.appendChild(bufferSpan);
+                                this.pendingBuffer = incomplete;
+                            } else {
+                                // No incomplete content - remove buffer if exists
+                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
+                                if (oldBuffer) {
+                                    oldBuffer.remove();
+                                }
+                                this.pendingBuffer = '';
+                            }
+                        } else {
+                            // Plain text rendering (no markdown syntax detected)
+                            contentDiv.textContent = displayedContent;
                         }
 
-                        charIndex++;
-
-                        // Schedule next character
-                        setTimeout(displayNextCharacter, CONFIG.streamCharDelayMs);
-                    } else {
-                        // Chunk complete, ready for next chunk
-                        isProcessingQueue = false;
-
-                        // Process next chunk if available
-                        if (chunkQueue.length > 0) {
-                            processQueue();
-                        } else if (streamComplete) {
-                            // All done
-                            console.log('[Chatbot] Queue processing complete');
-                            queueFinishedResolve();
-                        }
+                        // Simple scroll after update (throttled)
+                        this.scrollToBottomThrottled();
                     }
-                };
+                }
 
-                // Start displaying characters
-                displayNextCharacter();
+                // Chunk complete, ready for next chunk
+                isProcessingQueue = false;
+
+                // Process next chunk if available
+                if (chunkQueue.length > 0) {
+                    // Small delay between chunks for readability
+                    setTimeout(processQueue, 30);
+                } else if (streamComplete) {
+                    // All done
+                    console.log('[Chatbot] Queue processing complete');
+                    queueFinishedResolve();
+                }
             };
             
             try {
@@ -3213,16 +3354,48 @@ ${poweredByHTML}
                 console.log('[SCROLL-DEBUG] ========== STREAMING ENDED ==========');
                 this.isActivelyStreaming = false;
 
-                // FINALIZATION: Apply rich content rendering to final complete text
-                // This is done ONCE after streaming, not on every character update
+                // FINALIZATION: Render any remaining incomplete buffer
                 const finalContent = displayedContent || this.streamingBuffer.content;
                 if (finalContent && typeof finalContent === 'string') {
-                    console.log('[Chatbot] Finalizing content rendering (applying markdown)');
+                    console.log('[Chatbot] Finalizing content rendering');
+
                     const messageDiv = document.getElementById(messageId);
                     if (messageDiv) {
                         const contentDiv = messageDiv.querySelector('.sw-message-content');
                         if (contentDiv) {
-                            this.renderContentToDOM(contentDiv, finalContent);
+                            // If there's any pending buffer, render it as complete
+                            if (this.pendingBuffer) {
+                                const hasMarkdown = this.hasMarkdownSyntax(this.pendingBuffer);
+
+                                // Remove the buffer span first
+                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
+                                if (oldBuffer) {
+                                    oldBuffer.remove();
+                                }
+
+                                if (hasMarkdown && CONFIG.enableMarkdown) {
+                                    // Ensure markdown class is applied
+                                    if (!contentDiv.classList.contains('markdown')) {
+                                        contentDiv.classList.add('markdown');
+                                    }
+
+                                    // Render ONLY the pending buffer (not entire message)
+                                    const bufferHtml = this.renderMarkdown(this.pendingBuffer);
+                                    const bufferWrapper = document.createElement('span');
+                                    bufferWrapper.innerHTML = bufferHtml;
+                                    contentDiv.appendChild(bufferWrapper);
+                                } else {
+                                    // Plain text - just append as text node
+                                    const textNode = document.createTextNode(this.pendingBuffer);
+                                    contentDiv.appendChild(textNode);
+                                }
+
+                                console.log('[Chatbot] Rendered final pending buffer:', this.pendingBuffer.length, 'chars');
+                                this.pendingBuffer = '';
+                            }
+
+                            // Final scroll
+                            this.scrollToBottom(false);
                         }
                     }
                 }
@@ -3840,10 +4013,17 @@ ${poweredByHTML}
         }
 
         scrollToBottom(smooth = false) {
-            // Simple scroll for non-streaming scenarios (new messages, manual scroll)
-            // MutationObserver handles streaming auto-scroll
+            // Simple, reliable scroll for all scenarios
+            if (this.userIsScrolling) return; // Don't interrupt user scrolling
+
             const sentinel = document.getElementById('sw-scroll-sentinel');
+
             if (sentinel) {
+                // Force layout recalculation for mobile devices (iOS Safari fix)
+                if (this.chatMessages) {
+                    this.chatMessages.offsetHeight;
+                }
+
                 sentinel.scrollIntoView({
                     behavior: smooth ? 'smooth' : 'instant',
                     block: 'end',
@@ -3851,8 +4031,24 @@ ${poweredByHTML}
                 });
             } else {
                 // Fallback if sentinel not found
-                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                if (this.chatMessages) {
+                    this.chatMessages.offsetHeight;
+                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                }
             }
+        }
+
+        scrollToBottomThrottled() {
+            // Throttled version for streaming updates
+            if (this.userIsScrolling) return;
+
+            const now = Date.now();
+            if (now - this.lastScrollTime < this.scrollThrottleDelay) {
+                return; // Skip this scroll, too soon after last one
+            }
+
+            this.lastScrollTime = now;
+            this.scrollToBottom(false);
         }
         
         // Check if user is at bottom of chat (within 100px)
