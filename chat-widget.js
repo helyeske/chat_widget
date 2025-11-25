@@ -55,7 +55,9 @@
         apiEndpoint: 'https://ctm-chat.fylio.workers.dev',
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 200,
+        streamBatchIntervalMs: 1000,
+        streamChunkDelayMs: 80,  // Delay between displaying chunks from queue (legacy, kept for compatibility)
+        streamCharDelayMs: 5,   // Milliseconds per character for typewriter effect (30ms = ~33 chars/sec, smooth and readable)
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
 
         // Branding & Customization
@@ -104,9 +106,9 @@
         },
 
         // Rich Content Feature Flags (OFF by default for safety)
-        enableRichContent: false,     // Master switch for all rich content features
-        enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
-        enableCards: false,            // Enable structured cards and carousels
+        enableRichContent: true,      // Master switch for all rich content features
+        enableMarkdown: true,         // Enable markdown rendering (requires marked.js)
+        enableCards: true,            // Enable structured cards and carousels
         fallbackToPlainText: true,     // Fallback to plain text if libraries fail to load
 
         // DEPRECATED: Legacy support for old config format
@@ -156,9 +158,9 @@
 
     function loadLibraries() {
         return new Promise((resolve) => {
-            // If rich content disabled, skip loading
-            if (!CONFIG.enableRichContent) {
-                console.log('[Chatbot] Rich content disabled, skipping library load');
+            // Load libraries if either markdown or rich content features are enabled
+            if (!CONFIG.enableMarkdown && !CONFIG.enableRichContent) {
+                console.log('[Chatbot] Markdown and rich content disabled, skipping library load');
                 resolve(false);
                 return;
             }
@@ -692,7 +694,7 @@
             transition: all var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
-        /* Header Background - Pure Motion Blur (Premium Frosted Glass) */
+        /* Header Background - Frosted Glass (iMessage style) */
         .sw-header-background {
             position: absolute;
             top: 0;
@@ -700,91 +702,12 @@
             right: 0;
             height: 90px;
             z-index: 2;
-
-            /* Transparent base - no gradient background */
-            background: transparent;
-
             pointer-events: none;
-        }
 
-        /* Layer 1: VERY aggressive white fade - content disappears fast */
-        .sw-header-background::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-
-            /* VERY aggressive white fade - content gone quickly */
-            background: linear-gradient(
-                180deg,
-                #ffffff 0%,
-                #ffffff 62%,                     /* Solid white (pill area) */
-                rgba(255, 255, 255, 0.95) 65%,  /* Start strong fade */
-                rgba(255, 255, 255, 0.75) 68%,
-                rgba(255, 255, 255, 0.50) 72%,  /* Half gone quickly */
-                rgba(255, 255, 255, 0.20) 76%,
-                rgba(255, 255, 255, 0.05) 80%,
-                transparent 84%                  /* Fully invisible */
-            );
-
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* Layer 2: VERY STRONG immediate blur - no fade */
-        .sw-header-background::after {
-            content: '';
-            position: absolute;
-            top: 0px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-
-            background: transparent;
-
-            /* VERY STRONG blur - 28px for intense frosted glass */
-            backdrop-filter: blur(5px) saturate(115%);
-            -webkit-backdrop-filter: blur(5px) saturate(115%);
-
-            /* Simple on/off mask - blur at FULL STRENGTH where visible */
-            mask-image: linear-gradient(
-                180deg,
-                transparent 30%,
-                black 60%,
-                rgba(0, 0, 0, 0.8) 80%,  /* Fade blur out */
-                rgba(0, 0, 0, 0.4) 90%,
-                transparent 100%
-            );
-            -webkit-mask-image: linear-gradient(
-                180deg,
-                transparent 30%,
-                black 60%,
-                rgba(0, 0, 0, 0.8) 80%,  /* Fade blur out */
-                rgba(0, 0, 0, 0.4) 90%,
-                transparent 100%
-            );
-
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* Fallback: Stronger gradient without blur */
-        @supports not (backdrop-filter: blur(1px)) {
-            .sw-header-background::before {
-                background: linear-gradient(
-                    180deg,
-                    #ffffff 0%,
-                    #ffffff 62%,
-                    rgba(255, 255, 255, 0.95) 65%,
-                    rgba(255, 255, 255, 0.82) 68%,
-                    rgba(255, 255, 255, 0.60) 72%,
-                    rgba(255, 255, 255, 0.30) 76%,
-                    rgba(255, 255, 255, 0.10) 80%,
-                    transparent 84%
-                );
-            }
+            /* Frosted glass effect: strong blur + white tint */
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            background: rgba(255, 255, 255, 0.85);
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -792,7 +715,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 100px 20px 20px 20px;  /* Increased from 85px for better breathing room below header */
+            padding: 100px 20px 20px 12px;  /* Reduced left padding to bring avatar closer to edge, more content space */
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -982,7 +905,7 @@
         .sw-message {
             display: flex;
             flex-direction: column;
-            max-width: 85%;
+            max-width: 92%;
             animation: sw-messageSlideIn var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
@@ -1008,19 +931,19 @@
         .sw-message-wrapper {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
+            gap: 8px;
         }
 
         .sw-message-avatar {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: #f3f4f6;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--sw-primary);
-            font-size: 18px;
+            font-size: 14px;
             flex-shrink: 0;
             box-shadow: var(--shadow-sm);
             overflow: hidden;
@@ -1333,91 +1256,17 @@
             }
 
             .sw-header-background {
-                height: 60px;
+                height: 75px;  /* Extended for better spacing below pill */
 
-                /* Transparent base - pure motion blur approach */
-                background: transparent;
-            }
-
-            /* Mobile Layer 1: VERY aggressive white fade */
-            .sw-header-background::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-
-                /* VERY aggressive white fade for mobile */
-                background: linear-gradient(
-                    180deg,
-                    #ffffff 0%,
-                    #ffffff 60%,                     /* Pill coverage */
-                    rgba(255, 255, 255, 0.88) 64%,
-                    rgba(255, 255, 255, 0.65) 68%,
-                    rgba(255, 255, 255, 0.35) 72%,
-                    rgba(255, 255, 255, 0.10) 76%,
-                    transparent 80%                  /* Content gone fast */
-                );
-
-                z-index: 1;
-                pointer-events: none;
-            }
-
-            /* Mobile Layer 2: VERY STRONG blur - immediate */
-            .sw-header-background::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-
-                background: transparent;
-
-                /* VERY STRONG mobile blur - 22px */
-                backdrop-filter: blur(22px) saturate(110%);
-                -webkit-backdrop-filter: blur(22px) saturate(110%);
-
-                /* Simple on/off mask - full blur strength */
-                mask-image: linear-gradient(
-                    180deg,
-                    transparent 0%,
-                    transparent 60%,
-                    black 62%,               /* IMMEDIATE full blur */
-                    black 100%               /* Keep full strength */
-                );
-                -webkit-mask-image: linear-gradient(
-                    180deg,
-                    transparent 0%,
-                    transparent 60%,
-                    black 62%,
-                    black 100%
-                );
-
-                z-index: 2;
-                pointer-events: none;
-            }
-
-            /* Mobile fallback */
-            @supports not (backdrop-filter: blur(1px)) {
-                .sw-header-background::before {
-                    background: linear-gradient(
-                        180deg,
-                        #ffffff 0%,
-                        #ffffff 60%,
-                        rgba(255, 255, 255, 0.92) 64%,
-                        rgba(255, 255, 255, 0.72) 68%,
-                        rgba(255, 255, 255, 0.42) 72%,
-                        rgba(255, 255, 255, 0.15) 76%,
-                        transparent 80%
-                    );
-                }
+                /* Mobile frosted glass: slightly stronger for better readability */
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                background: rgba(255, 255, 255, 0.88);
             }
 
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
-                padding: 88px 16px 16px 16px;  /* Increased from 75px for better breathing room below header */
+                padding: 88px 16px 16px 10px;  /* Reduced left padding for more content space on mobile */
                 overflow-x: hidden; /* ADD: Prevent horizontal scroll */
                 -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
@@ -1783,6 +1632,44 @@
             font-style: italic;
         }
 
+        /* Markdown Lists */
+        .sw-message-content.markdown ul {
+            margin: 10px 0;
+            padding-left: 24px;
+            list-style: none;
+        }
+
+        .sw-message-content.markdown ul li {
+            position: relative;
+            margin: 6px 0;
+            padding-left: 8px;
+        }
+
+        .sw-message-content.markdown ul li::before {
+            content: '•';
+            position: absolute;
+            left: -16px;
+            color: var(--sw-primary);
+            font-weight: bold;
+        }
+
+        .sw-message-content.markdown ol {
+            margin: 10px 0;
+            padding-left: 24px;
+            list-style: decimal;
+        }
+
+        .sw-message-content.markdown ol li {
+            margin: 6px 0;
+            padding-left: 8px;
+        }
+
+        /* Nested lists */
+        .sw-message-content.markdown li ul,
+        .sw-message-content.markdown li ol {
+            margin: 4px 0;
+        }
+
         /* Card Container */
         .sw-card-container {
             display: flex;
@@ -2030,6 +1917,8 @@
                 <!-- Messages Area (Inside White Card) -->
                 <div class="sw-chat-messages" id="sw-chat-messages" role="log" aria-live="polite" aria-label="Chat conversation">
                     <!-- Messages added dynamically -->
+                    <!-- Scroll sentinel - always at bottom for reliable scrolling -->
+                    <div id="sw-scroll-sentinel" style="height: 1px; margin: 0; padding: 0;"></div>
                 </div>
 
                 <!-- LAYER 3b: Elevated Input Card -->
@@ -2169,6 +2058,8 @@ ${poweredByHTML}
             this.streamingBuffer = { content: '', messageId: null };
             this.userIsScrolling = false;
             this.scrollTimeout = null;
+            this.scrollPending = false; // Prevent overlapping scroll requests
+            this.isActivelyStreaming = false; // Track active streaming for auto-scroll behavior
             this.isAnimating = false; // Legacy flag, kept for compatibility
 
             // Animation guard for robust state management
@@ -2283,7 +2174,10 @@ ${poweredByHTML}
             messageDiv.className = `sw-message sw-${sender}-message`;
             messageDiv.setAttribute('role', 'article');
             messageDiv.setAttribute('aria-label', `${sender === 'bot' ? 'AI' : 'User'} message`);
-            messageDiv.id = `msg-${Date.now()}-${Math.random()}`;
+            const messageId = `msg-${Date.now()}-${Math.random()}`;
+            messageDiv.id = messageId;
+
+            let contentDiv;
 
             if (sender === 'bot') {
                 const wrapper = document.createElement('div');
@@ -2295,20 +2189,30 @@ ${poweredByHTML}
                 this.renderBotAvatar(avatar);
                 wrapper.appendChild(avatar);
 
-                const contentDiv = document.createElement('div');
+                contentDiv = document.createElement('div');
                 contentDiv.className = 'sw-message-content';
-                contentDiv.textContent = content;
                 wrapper.appendChild(contentDiv);
 
                 messageDiv.appendChild(wrapper);
             } else {
-                const contentDiv = document.createElement('div');
+                contentDiv = document.createElement('div');
                 contentDiv.className = 'sw-message-content';
-                contentDiv.textContent = content;
+                contentDiv.textContent = content;  // User messages are always plain text
                 messageDiv.appendChild(contentDiv);
             }
 
             this.chatMessages.appendChild(messageDiv);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
+            // Apply rich content rendering for bot messages (uses unified renderer)
+            if (sender === 'bot') {
+                this.renderContentToDOM(contentDiv, content);
+            }
         }
 
         // Calculate and cache pill width for morphing animation
@@ -2401,7 +2305,8 @@ ${poweredByHTML}
                 /\*.*\*/,          // Italic
                 /\[.*\]\(.*\)/,    // Links
                 /`.*`/,            // Code
-                /^[-*+]\s/m,       // Lists
+                /^[-*+]\s/m,       // Lists (proper markdown)
+                /[:.] - .+/,       // Inline lists (will be normalized)
                 /^>\s/m            // Blockquotes
             ];
 
@@ -2419,7 +2324,42 @@ ${poweredByHTML}
             return String(text).replace(/[&<>"']/g, m => map[m]);
         }
 
+        normalizeMarkdown(text) {
+            // Convert inline list patterns to proper markdown format
+            // Handles cases like: "text: - Item1. - Item2. - Item3"
+
+            // Pattern 1: Lists after colon or period with inline dashes
+            // Match: ": - " or ". - " followed by text
+            text = text.replace(/([:.]) - ([^\n-]+?)(\. - |\.$|$)/g, (match, separator, item, ending) => {
+                // Check if this looks like a list item (not just a dash in sentence)
+                if (item.length > 0 && item.length < 200) {
+                    if (ending === '. - ') {
+                        return `${separator}\n- ${item}\n`;
+                    } else {
+                        return `${separator}\n- ${item}${ending}`;
+                    }
+                }
+                return match;
+            });
+
+            // Pattern 2: Multiple inline dashes in a row (catch remaining)
+            // Match remaining inline " - " patterns not caught by Pattern 1
+            text = text.replace(/ - ([^-\n]{3,}?)(?=\. - | - |\.$|$)/g, (match, item) => {
+                if (item.trim().length > 0) {
+                    return `\n- ${item.trim()}`;
+                }
+                return match;
+            });
+
+            // Clean up any double newlines created
+            text = text.replace(/\n{3,}/g, '\n\n');
+
+            return text;
+        }
+
         renderMarkdown(content) {
+            // Normalize inline lists to proper markdown format
+            content = this.normalizeMarkdown(content);
             // Feature check
             if (!CONFIG.enableMarkdown || !LIBRARIES_LOADED.marked || !LIBRARIES_LOADED.DOMPurify) {
                 // Fallback to plain text
@@ -2575,6 +2515,67 @@ ${poweredByHTML}
             }
         }
 
+        // ========================================
+        // UNIFIED CONTENT RENDERER
+        // Single source of truth for all content rendering
+        // ========================================
+        renderContentToDOM(contentDiv, content) {
+            if (!contentDiv) return;
+
+            // Reset classes
+            contentDiv.classList.remove('markdown', 'card-container', 'carousel-container');
+
+            try {
+                // Detect message type
+                const messageData = this.detectMessageType(content);
+
+                switch (messageData.type) {
+                    case 'text':
+                        // Check if markdown is enabled and content has markdown syntax
+                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
+                            const html = this.renderMarkdown(messageData.content);
+                            contentDiv.innerHTML = html;
+                            contentDiv.classList.add('markdown');
+                        } else {
+                            // Plain text (safe, uses textContent)
+                            contentDiv.textContent = messageData.content;
+                        }
+                        break;
+
+                    case 'card':
+                        if (CONFIG.enableRichContent && CONFIG.enableCards) {
+                            const cardHtml = this.renderCard(messageData);
+                            contentDiv.innerHTML = cardHtml;
+                            contentDiv.classList.add('card-container');
+                        } else {
+                            // Fallback to plain text
+                            const text = `${messageData.title || ''}\n${messageData.description || ''}`;
+                            contentDiv.textContent = text;
+                        }
+                        break;
+
+                    case 'carousel':
+                        if (CONFIG.enableRichContent && CONFIG.enableCards) {
+                            const carouselHtml = this.renderCarousel(messageData.items);
+                            contentDiv.innerHTML = carouselHtml;
+                            contentDiv.classList.add('carousel-container');
+                        } else {
+                            // Fallback to plain text
+                            contentDiv.textContent = `${messageData.items?.length || 0} items available`;
+                        }
+                        break;
+
+                    default:
+                        // Unknown type, treat as plain text
+                        contentDiv.textContent = String(content);
+                }
+            } catch (error) {
+                console.error('[Chatbot] Content rendering failed:', error);
+                // Fallback to plain text on error
+                contentDiv.textContent = typeof content === 'string' ? content : String(content);
+            }
+        }
+
         init() {
             // Get DOM elements
             this.chatInputBar = document.getElementById('sw-chat-input-bar');
@@ -2590,6 +2591,31 @@ ${poweredByHTML}
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
             this.panelNewChatBtn = document.getElementById('sw-panel-new-chat-btn');
+
+            // Setup MutationObserver for automatic scroll on content changes
+            this.scrollObserver = new MutationObserver(() => {
+                // Only auto-scroll during active streaming when user hasn't scrolled away
+                if (this.isActivelyStreaming && !this.userIsScrolling && !this.scrollPending) {
+                    this.scrollPending = true;
+                    requestAnimationFrame(() => {
+                        const sentinel = document.getElementById('sw-scroll-sentinel');
+                        if (sentinel) {
+                            sentinel.scrollIntoView({ behavior: 'instant', block: 'end', inline: 'nearest' });
+                        }
+                        this.scrollPending = false;
+                    });
+                }
+            });
+
+            // Start observing chat messages for content changes
+            if (this.chatMessages) {
+                this.scrollObserver.observe(this.chatMessages, {
+                    childList: true,      // Watch for added/removed nodes
+                    subtree: true,        // Watch all descendants
+                    characterData: true   // Watch for text content changes
+                });
+                console.log('[SCROLL] MutationObserver initialized for auto-scroll');
+            }
 
             // Populate chat logo with bot avatar (image or emoji)
             const chatLogo = this.chatPanel.querySelector('.sw-chat-logo');
@@ -2668,13 +2694,29 @@ ${poweredByHTML}
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
-            // Detect user scrolling in chat
+            // Detect user scrolling away from bottom during streaming
             this.chatMessages.addEventListener('scroll', () => {
-                this.userIsScrolling = true;
-                clearTimeout(this.scrollTimeout);
-                this.scrollTimeout = setTimeout(() => {
-                    this.userIsScrolling = false;
-                }, 1000);  // User stopped scrolling after 1 second
+                // Only care about scroll position during active streaming
+                if (!this.isActivelyStreaming) {
+                    return;
+                }
+
+                // Check if user scrolled away from bottom
+                const container = this.chatMessages;
+                const scrolledToBottom = Math.abs(
+                    container.scrollHeight - container.scrollTop - container.clientHeight
+                ) < 50; // 50px threshold
+
+                if (!scrolledToBottom) {
+                    // User scrolled away from bottom - pause auto-scroll
+                    this.userIsScrolling = true;
+                    clearTimeout(this.scrollTimeout);
+
+                    // Resume auto-scroll after user stops for 1 second
+                    this.scrollTimeout = setTimeout(() => {
+                        this.userIsScrolling = false;
+                    }, 1000);
+                }
             });
 
             // Keyboard shortcuts for accessibility
@@ -2953,28 +2995,97 @@ ${poweredByHTML}
         async processStreamingResponse(response, messageId) {
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-            
+
             if (!reader) {
                 throw new Error('No response body reader available');
             }
-            
+
+            // Set streaming state for auto-scroll behavior
+            console.log('[SCROLL-DEBUG] ========== STREAMING STARTED ==========');
+            this.isActivelyStreaming = true;
+
             let buffer = '';
             let firstChunkReceived = false;
-            
+
+            // NEW: Chunk queue for controlled streaming display
+            const chunkQueue = [];
+            let displayedContent = '';
+            let isProcessingQueue = false;
+            let streamComplete = false;
+            let queueFinishedResolve = null;
+            const queueFinishedPromise = new Promise(resolve => queueFinishedResolve = resolve);
+
             // Reset streaming buffer
             this.streamingBuffer = {
                 content: '',
-                messageId: messageId
+                messageId: messageId,
+                isStructured: false
             };
-            
-            // Start batch update interval
-            const batchInterval = setInterval(() => {
-                if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
-                    const contentToUpdate = this.streamingBuffer.content;
-                    const msgId = this.streamingBuffer.messageId;
-                    this.updateMessage(msgId, contentToUpdate);
+
+            // Process queue: character-level streaming for true typewriter effect
+            const processQueue = () => {
+                if (isProcessingQueue) {
+                    return;
                 }
-            }, CONFIG.streamBatchIntervalMs);
+
+                // If stream is complete and queue is empty, signal completion
+                if (streamComplete && chunkQueue.length === 0) {
+                    console.log('[Chatbot] Queue processing complete');
+                    queueFinishedResolve();
+                    return;
+                }
+
+                // No more chunks to process right now
+                if (chunkQueue.length === 0) {
+                    return;
+                }
+
+                isProcessingQueue = true;
+                const chunk = chunkQueue.shift();
+
+                // Split chunk into individual characters for typewriter effect
+                const characters = chunk.split('');
+                let charIndex = 0;
+
+                const displayNextCharacter = () => {
+                    if (charIndex < characters.length) {
+                        // Add one character to displayed content
+                        displayedContent += characters[charIndex];
+                        this.streamingBuffer.content = displayedContent;
+
+                        // PERFORMANCE: During streaming, set plain text directly
+                        // Avoids expensive markdown rendering on every character (30ms intervals)
+                        const messageDiv = document.getElementById(messageId);
+                        if (messageDiv) {
+                            const contentDiv = messageDiv.querySelector('.sw-message-content');
+                            if (contentDiv) {
+                                contentDiv.textContent = displayedContent;
+                                // MutationObserver triggers auto-scroll
+                            }
+                        }
+
+                        charIndex++;
+
+                        // Schedule next character
+                        setTimeout(displayNextCharacter, CONFIG.streamCharDelayMs);
+                    } else {
+                        // Chunk complete, ready for next chunk
+                        isProcessingQueue = false;
+
+                        // Process next chunk if available
+                        if (chunkQueue.length > 0) {
+                            processQueue();
+                        } else if (streamComplete) {
+                            // All done
+                            console.log('[Chatbot] Queue processing complete');
+                            queueFinishedResolve();
+                        }
+                    }
+                };
+
+                // Start displaying characters
+                displayNextCharacter();
+            };
             
             try {
                 while (true) {
@@ -3039,9 +3150,10 @@ ${poweredByHTML}
 
                                         // NEW: Card or structured data (complete object)
                                         if (contentObj.type === 'card' || contentObj.type === 'carousel' || contentObj.title) {
-                                            // Don't stream cards - wait for complete object
+                                            // Don't stream cards - display immediately
                                             this.streamingBuffer.content = contentObj;
                                             this.streamingBuffer.isStructured = true;
+                                            this.updateMessage(messageId, contentObj);
                                             console.log('[Chatbot] Received structured content:', contentObj.type || 'card');
                                             continue;
                                         }
@@ -3052,10 +3164,15 @@ ${poweredByHTML}
                                     chunkContent = item.content;
                                 }
 
-                                // Add chunk to buffer (only for text streaming, not structured data)
+                                // NEW: Add chunk to queue (only for text streaming, not structured data)
                                 if (chunkContent && !this.streamingBuffer.isStructured) {
-                                    this.streamingBuffer.content += chunkContent;
-                                    console.log('[Chatbot] Buffered chunk:', chunkContent);
+                                    chunkQueue.push(chunkContent);
+                                    console.log('[Chatbot] Queued chunk:', chunkContent);
+
+                                    // Start processing if not already running
+                                    if (!isProcessingQueue) {
+                                        processQueue();
+                                    }
                                 }
                             }
                         } catch (lineError) {
@@ -3071,17 +3188,49 @@ ${poweredByHTML}
                     console.warn('[Chatbot] Reader release failed:', e);
                 }
 
-                // Stop batch updates
-                clearInterval(batchInterval);
+                // Signal that stream is complete
+                streamComplete = true;
+                console.log('[Chatbot] Stream complete, chunks in queue:', chunkQueue.length);
 
-                // CRITICAL FIX: Hide typing indicator BEFORE final flush
+                // If structured content or no queue, resolve immediately
+                if (this.streamingBuffer.isStructured || chunkQueue.length === 0) {
+                    console.log('[Chatbot] No queue processing needed, resolving immediately');
+                    queueFinishedResolve();
+                } else {
+                    // Process any remaining items in queue
+                    console.log('[Chatbot] Waiting for queue to finish processing...');
+                    processQueue();
+                }
+
+                // Wait for queue to finish processing all chunks
+                await queueFinishedPromise;
+                console.log('[Chatbot] Queue processing finished');
+
+                // Hide typing indicator after queue is done
                 this.hideTypingIndicator(messageId);
 
-                // Final flush
-                if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
-                    const finalContent = this.streamingBuffer.content;
-                    const msgId = this.streamingBuffer.messageId;
-                    this.updateMessage(msgId, finalContent);
+                // Reset streaming state
+                console.log('[SCROLL-DEBUG] ========== STREAMING ENDED ==========');
+                this.isActivelyStreaming = false;
+
+                // FINALIZATION: Apply rich content rendering to final complete text
+                // This is done ONCE after streaming, not on every character update
+                const finalContent = displayedContent || this.streamingBuffer.content;
+                if (finalContent && typeof finalContent === 'string') {
+                    console.log('[Chatbot] Finalizing content rendering (applying markdown)');
+                    const messageDiv = document.getElementById(messageId);
+                    if (messageDiv) {
+                        const contentDiv = messageDiv.querySelector('.sw-message-content');
+                        if (contentDiv) {
+                            this.renderContentToDOM(contentDiv, finalContent);
+                        }
+                    }
+                }
+
+                // Final save - use displayed content (what actually showed to user)
+
+                if (finalContent) {
+                    console.log('[Chatbot] Saving final content, length:', typeof finalContent === 'string' ? finalContent.length : 'structured');
 
                     // Add bot response to message history and persist
                     const contentText = typeof finalContent === 'string' ? finalContent : JSON.stringify(finalContent);
@@ -3277,7 +3426,6 @@ ${poweredByHTML}
             morph.style.width = bubbleRect.width + 'px';
             morph.style.height = bubbleRect.height + 'px';
             morph.style.borderRadius = '50%';
-            morph.style.filter = 'blur(0px)';  // Initial state - no blur
 
             document.body.appendChild(morph);
 
@@ -3326,7 +3474,7 @@ ${poweredByHTML}
                         // STAGE 1: Hold circle (user sees emoji clearly)
                         setTimeout(() => {
                             // Enable transitions for width/height/left changes to expand leftward
-                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease, filter 0.15s ease-out';
+                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease';
 
                             // STAGE 2: Expand to pill LEFTWARD (keeping right edge anchored)
                             setTimeout(() => {
@@ -3341,7 +3489,6 @@ ${poweredByHTML}
                                 morph.style.width = requiredPillWidth + 'px';
                                 morph.style.height = headerRect.height + 'px';
                                 morph.style.borderRadius = '999px';
-                                morph.style.filter = 'blur(0.4px 0px)';  // Horizontal blur during expansion
                             }, ANIMATION_TIMING.transitionEnable);
 
                             // STAGE 3: UNIFIED upward motion - pill + panel rise together
@@ -3350,11 +3497,10 @@ ${poweredByHTML}
                                 const premiumEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
                                 // Animate pill upward with fade out from start
-                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.5s ${premiumEasing}, filter 0.15s ease-out`;
+                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.5s ${premiumEasing}`;
                                 morph.style.left = headerRect.left + 'px';
                                 morph.style.top = headerRect.top + 'px';
                                 morph.style.opacity = '0';  // Fade out as it reaches top
-                                morph.style.filter = 'blur(0px 0.6px)';  // Vertical blur during upward motion
 
                                 // Simultaneously animate panel upward (slide from below)
                                 panel.style.transition = `transform 0.7s ${premiumEasing}, opacity 0.4s ${premiumEasing}`;
@@ -3389,7 +3535,6 @@ ${poweredByHTML}
 
             // Remove morphing element
             if (morph && morph.parentNode) {
-                morph.style.filter = 'blur(0px)';  // Clear blur for crisp final state
                 morph.remove();
             }
 
@@ -3575,6 +3720,13 @@ ${poweredByHTML}
             }
             
             this.chatMessages.appendChild(messageDiv);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
             this.messageHistory.push({ role: sender, content, time: new Date() });
             this.saveConversation();  // Persist conversation to localStorage
             this.scrollToBottom();
@@ -3586,10 +3738,10 @@ ${poweredByHTML}
             messageDiv.setAttribute('role', 'article');
             messageDiv.setAttribute('aria-label', 'AI message');
             messageDiv.id = messageId;
-            
+
             const wrapper = document.createElement('div');
             wrapper.className = 'sw-message-wrapper';
-            
+
             const avatar = document.createElement('div');
             avatar.className = 'sw-message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
@@ -3598,75 +3750,44 @@ ${poweredByHTML}
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'sw-message-content';
-            contentDiv.textContent = content;
             wrapper.appendChild(contentDiv);
 
             messageDiv.appendChild(wrapper);
             this.chatMessages.appendChild(messageDiv);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
+            // Apply rendering if content is provided (uses unified renderer)
+            // Empty content means streaming will populate it later
+            if (content) {
+                this.renderContentToDOM(contentDiv, content);
+            }
+
             this.scrollToBottom();
         }
 
         updateMessage(messageId, content) {
+            console.log('[SCROLL-DEBUG] updateMessage called', {
+                messageId,
+                contentLength: typeof content === 'string' ? content.length : 'structured',
+                isActivelyStreaming: this.isActivelyStreaming,
+                userIsScrolling: this.userIsScrolling
+            });
+
             const messageDiv = document.getElementById(messageId);
             if (!messageDiv) return;
 
             const contentDiv = messageDiv.querySelector('.sw-message-content');
             if (!contentDiv) return;
 
-            // BACKWARDS COMPATIBLE PATH: Feature flag check
-            if (!CONFIG.enableRichContent) {
-                // Use existing behavior (plain text only)
-                contentDiv.textContent = content;
-                if (this.isNearBottom() && !this.userIsScrolling) {
-                    this.scrollToBottom();
-                }
-                return;
-            }
+            // Use unified renderer - single source of truth
+            this.renderContentToDOM(contentDiv, content);
 
-            // NEW PATH: Rich content rendering
-            try {
-                const messageData = this.detectMessageType(content);
-
-                switch (messageData.type) {
-                    case 'text':
-                        // Check if markdown is enabled and content has markdown syntax
-                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
-                            const html = this.renderMarkdown(messageData.content);
-                            contentDiv.innerHTML = html;
-                            contentDiv.classList.add('markdown');
-                        } else {
-                            // Plain text (safe, uses textContent)
-                            contentDiv.textContent = messageData.content;
-                        }
-                        break;
-
-                    case 'card':
-                        const cardHtml = this.renderCard(messageData);
-                        contentDiv.innerHTML = cardHtml;
-                        contentDiv.classList.add('card-container');
-                        break;
-
-                    case 'carousel':
-                        const carouselHtml = this.renderCarousel(messageData.items);
-                        contentDiv.innerHTML = carouselHtml;
-                        contentDiv.classList.add('card-container');
-                        break;
-
-                    default:
-                        // Unknown type: fallback to text
-                        console.warn('[Chatbot] Unknown message type:', messageData.type);
-                        contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
-                }
-
-                // Scroll behavior (unchanged)
-                if (this.isNearBottom() && !this.userIsScrolling) {
-                    this.scrollToBottom();
-                }
-            } catch (error) {
-                console.error('[Chatbot] updateMessage rendering error:', error);
-                // Emergency fallback: show as plain text
-                contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
-            }
+            // MutationObserver handles auto-scroll during streaming
         }
         
         showTypingIndicator(messageId) {
@@ -3710,11 +3831,26 @@ ${poweredByHTML}
             timestamp.setAttribute('aria-label', `Message sent at ${dateStr}`);
             timestamp.textContent = dateStr;
             this.chatMessages.appendChild(timestamp);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
         }
-        
-        scrollToBottom() {
-            // Only auto-scroll if user isn't manually scrolling
-            if (!this.userIsScrolling) {
+
+        scrollToBottom(smooth = false) {
+            // Simple scroll for non-streaming scenarios (new messages, manual scroll)
+            // MutationObserver handles streaming auto-scroll
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel) {
+                sentinel.scrollIntoView({
+                    behavior: smooth ? 'smooth' : 'instant',
+                    block: 'end',
+                    inline: 'nearest'
+                });
+            } else {
+                // Fallback if sentinel not found
                 this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
             }
         }
@@ -3767,17 +3903,17 @@ ${poweredByHTML}
             injectStyles();
             injectHTML();
 
-            // Load libraries if rich content enabled
-            if (CONFIG.enableRichContent) {
-                console.log('[Chatbot] Loading rich content libraries...');
+            // Load libraries if markdown or rich content enabled
+            if (CONFIG.enableMarkdown || CONFIG.enableRichContent) {
+                console.log('[Chatbot] Loading rendering libraries...');
                 await loadLibraries();
             }
 
             window.SemmelweisChatWidget = new ChatWidget();
             console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
+            console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
             console.log('[Chatbot] Rich content:', CONFIG.enableRichContent ? 'enabled' : 'disabled');
             if (CONFIG.enableRichContent) {
-                console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
                 console.log('[Chatbot] Cards:', CONFIG.enableCards ? 'enabled' : 'disabled');
             }
         };
