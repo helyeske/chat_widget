@@ -57,7 +57,7 @@
         timeoutMs: 20000,
         streamBatchIntervalMs: 1000,
         streamChunkDelayMs: 80,  // Delay between displaying chunks from queue (legacy, kept for compatibility)
-        streamCharDelayMs: 5,   // Milliseconds per character for typewriter effect (30ms = ~33 chars/sec, smooth and readable)
+        streamCharDelayMs: 10,   // Milliseconds per character for typewriter effect (30ms = ~33 chars/sec, smooth and readable)
         fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
 
         // Branding & Customization
@@ -86,7 +86,8 @@
         // UI Visibility Controls
         ui: {
             showFloatingBar: true,  // Show/hide the floating chat input bar at the bottom
-            showPoweredBy: true     // Show/hide "Powered by" attribution
+            showPoweredBy: true,    // Show/hide "Powered by" attribution
+            showBetaBadge: false     // Show/hide Beta label next to "Powered by"
         },
 
         // Powered By Attribution (internal - not user configurable)
@@ -98,6 +99,11 @@
             logoUrl: './favicon.svg'
         },
 
+        // Beta Badge Configuration
+        betaBadge: {
+            tooltipText: "Our AI assistant can make mistakes, if in doubt, contact tmk@semmelweis.hu."
+        },
+
         // Conversation Persistence Settings
         persistence: {
             enabled: true,                          // Enable/disable conversation persistence
@@ -107,9 +113,9 @@
 
         // Rich Content Feature Flags (OFF by default for safety)
         enableRichContent: true,      // Master switch for all rich content features
-        enableMarkdown: true,         // Enable markdown rendering (requires marked.js)
+        enableMarkdown: true,         // Enable HTML content rendering (server sends pre-formatted HTML)
         enableCards: true,            // Enable structured cards and carousels
-        fallbackToPlainText: true,     // Fallback to plain text if libraries fail to load
+        fallbackToPlainText: true,     // Fallback to plain text if DOMPurify fails to load
 
         // DEPRECATED: Legacy support for old config format
         quickQuestions: undefined      // Will be mapped from content.quickQuestions
@@ -149,63 +155,32 @@
     CONFIG.quickQuestions = CONFIG.content?.quickQuestions || DEFAULT_CONFIG.content.quickQuestions;
 
     // ========================================
-    // LIBRARY LOADING (for Rich Content)
+    // LIBRARY LOADING (HTML Sanitization)
     // ========================================
     let LIBRARIES_LOADED = {
-        marked: false,
         DOMPurify: false
     };
 
     function loadLibraries() {
         return new Promise((resolve) => {
-            // Load libraries if either markdown or rich content features are enabled
-            if (!CONFIG.enableMarkdown && !CONFIG.enableRichContent) {
-                console.log('[Chatbot] Markdown and rich content disabled, skipping library load');
-                resolve(false);
-                return;
-            }
+            // Always load DOMPurify for HTML sanitization (server sends HTML)
+            console.log('[Chatbot] Loading DOMPurify for HTML sanitization');
 
-            let loadedCount = 0;
-            const totalLibraries = 2;
-
-            function checkComplete() {
-                loadedCount++;
-                if (loadedCount === totalLibraries) {
-                    const allLoaded = LIBRARIES_LOADED.marked && LIBRARIES_LOADED.DOMPurify;
-                    console.log('[Chatbot] Libraries loaded:', allLoaded ? 'success' : 'failed');
-                    resolve(allLoaded);
-                }
-            }
-
-            // Load marked.js (markdown parser)
-            const markedScript = document.createElement('script');
-            markedScript.src = 'https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js';
-            markedScript.onload = () => {
-                LIBRARIES_LOADED.marked = typeof window.marked !== 'undefined';
-                if (LIBRARIES_LOADED.marked) {
-                    console.log('[Chatbot] marked.js loaded successfully');
-                }
-                checkComplete();
-            };
-            markedScript.onerror = () => {
-                console.warn('[Chatbot] Failed to load marked.js - markdown rendering will be disabled');
-                checkComplete();
-            };
-            document.head.appendChild(markedScript);
-
-            // Load DOMPurify (HTML sanitization)
             const purifyScript = document.createElement('script');
             purifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js';
             purifyScript.onload = () => {
                 LIBRARIES_LOADED.DOMPurify = typeof window.DOMPurify !== 'undefined';
                 if (LIBRARIES_LOADED.DOMPurify) {
                     console.log('[Chatbot] DOMPurify loaded successfully');
+                    resolve(true);
+                } else {
+                    console.error('[Chatbot] DOMPurify failed to initialize');
+                    resolve(false);
                 }
-                checkComplete();
             };
             purifyScript.onerror = () => {
-                console.warn('[Chatbot] Failed to load DOMPurify - HTML sanitization will be disabled');
-                checkComplete();
+                console.error('[Chatbot] Failed to load DOMPurify - HTML sanitization disabled');
+                resolve(false);
             };
             document.head.appendChild(purifyScript);
         });
@@ -998,7 +973,8 @@
             position: relative;
         }
 
-        .sw-bot-message .sw-message-content li::before {
+        /* Bullet styling - only for non-markdown lists (markdown has its own styling below) */
+        .sw-bot-message .sw-message-content:not(.markdown) li::before {
             content: '•';
             position: absolute;
             left: 0;
@@ -1157,7 +1133,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 8px;  /* Space between badge and "Powered by" text */
             padding: 0;
             font-size: 11px;
             color: #9ca3af;
@@ -1196,6 +1172,72 @@
         .sw-powered-by-brand {
             font-weight: 500;
             letter-spacing: -0.01em;
+        }
+
+        /* Beta Badge - Inline flex item that centers with "Powered by" */
+        .sw-beta-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--sw-primary);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            cursor: help;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+            position: relative;  /* For tooltip positioning */
+        }
+
+        .sw-beta-badge:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Custom Tooltip - Primary Color with Multi-line */
+        .sw-beta-badge::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            background: var(--sw-primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0;
+            text-transform: none;
+            white-space: normal;
+            max-width: 200px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .sw-beta-badge::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--sw-primary);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sw-beta-badge:hover::after,
+        .sw-beta-badge:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
         /* Mobile Responsive */
@@ -1639,27 +1681,25 @@
             font-style: italic;
         }
 
-        /* Markdown Lists */
+        /* Markdown Lists - Native Browser Rendering for Streaming Compatibility */
         .sw-message-content.markdown ul {
             margin: 10px 0;
-            padding-left: 24px;
-            list-style: none;
+            padding-left: 28px;  /* Space for native bullet */
+            list-style-type: disc;  /* Native bullet */
+            list-style-position: outside;  /* Bullet outside content area */
         }
 
-        /* Higher specificity to override legacy styles - ensures black text, not grey */
+        /* List items - rely on native browser rendering */
         .sw-bot-message .sw-message-content.markdown ul li {
-            position: relative;
             margin: 6px 0;
-            padding-left: 8px;
+            padding-left: 8px;  /* Slight indent for content */
             color: var(--sw-text-primary);  /* Explicit black color */
         }
 
-        .sw-message-content.markdown ul li::before {
-            content: '•';
-            position: absolute;
-            left: -16px;
-            color: var(--sw-primary);
-            font-weight: bold;
+        /* Style the native bullet marker */
+        .sw-message-content.markdown ul li::marker {
+            color: var(--sw-primary);  /* Brand color for bullet */
+            font-size: 0.8em;  /* Slightly smaller bullet */
         }
 
         .sw-message-content.markdown ol {
@@ -1852,9 +1892,21 @@
     function generateHTML() {
         // Check ui.showPoweredBy first, fallback to poweredBy.enabled for backward compatibility
         const showPoweredBy = CONFIG.ui?.showPoweredBy ?? CONFIG.poweredBy.enabled;
+        const showBetaBadge = CONFIG.ui?.showBetaBadge ?? false;
+
+        // Get tooltip text from config (with default fallback)
+        const tooltipText = CONFIG.betaBadge?.tooltipText ??
+            "Our AI assistant can make mistakes, if in doubt, contact tmk@semmelweis.hu.";
+
+        // Beta badge HTML with customizable tooltip (only if enabled)
+        const betaBadgeHTML = showBetaBadge ?
+            `<span class="sw-beta-badge" data-tooltip="${tooltipText}">Beta</span>`
+            : '';
+
         const poweredByHTML = showPoweredBy ? `
                     <!-- Powered by Attribution -->
                     <div class="sw-powered-by">
+                        ${betaBadgeHTML}
                         <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
                         <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
                             <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
@@ -2074,9 +2126,6 @@ ${poweredByHTML}
             this.isAnimating = false; // Legacy flag, kept for compatibility
             this.lastScrollTime = 0; // Throttle scroll updates
             this.scrollThrottleDelay = 30; // Match chunk processing delay (30ms)
-            // New: Block-level rendering state
-            this.renderedContent = ''; // Already rendered and appended to DOM
-            this.pendingBuffer = ''; // Incomplete content waiting for completion
 
             // Animation guard for robust state management
             this.animationLock = {
@@ -2313,98 +2362,6 @@ ${poweredByHTML}
             return { type: 'text', content: String(data) };
         }
 
-        hasMarkdownSyntax(text) {
-            // Quick heuristic to detect if text contains markdown
-            const markdownPatterns = [
-                /^#+\s/m,          // Headers
-                /\*\*.*\*\*/,      // Bold
-                /\*.*\*/,          // Italic
-                /\[.*\]\(.*\)/,    // Links
-                /`.*`/,            // Code
-                /^[-*+]\s/m,       // Lists (proper markdown)
-                /[:.] - .+/,       // Inline lists (will be normalized)
-                /^>\s/m            // Blockquotes
-            ];
-
-            return markdownPatterns.some(pattern => pattern.test(text));
-        }
-
-        hasMarkdownSyntax(text) {
-            // Check if text contains ANY markdown syntax
-            if (!text || typeof text !== 'string') return false;
-
-            const markdownPatterns = [
-                /^[-*+]\s/m,          // List item start
-                /^\d+\.\s/m,          // Numbered list start
-                /^#+\s/m,             // Header
-                /```/,                // Code block
-                /^>\s/m,              // Blockquote
-                /\*\*[^*]+\*\*/,      // Bold
-                /\*[^*\n]+\*/,        // Italic
-                /`[^`]+`/,            // Inline code
-                /\[.+\]\(.+\)/        // Links
-            ];
-
-            return markdownPatterns.some(pattern => pattern.test(text));
-        }
-
-        extractCompleteMarkdownBlocks(text) {
-            // Extract complete markdown blocks for progressive rendering
-            // Strategy: Mark content complete at sentence boundaries for smooth streaming
-            // Returns: { complete: string, incomplete: string }
-            if (!text || typeof text !== 'string') {
-                return { complete: '', incomplete: text || '' };
-            }
-
-            let complete = '';
-            let incomplete = '';
-
-            // Strategy 1: Find complete sentences (. ! ? followed by space or newline)
-            // EXCLUDE colons - they typically introduce lists/explanations that follow
-            const sentenceEndRegex = /([.!?][\s\n])/g;
-            let lastCompleteIndex = -1;
-            let match;
-
-            while ((match = sentenceEndRegex.exec(text)) !== null) {
-                lastCompleteIndex = match.index + match[0].length;
-            }
-
-            if (lastCompleteIndex > 0) {
-                // Found at least one complete sentence
-                complete = text.substring(0, lastCompleteIndex);
-                incomplete = text.substring(lastCompleteIndex);
-            } else {
-                // No complete sentences - try complete lines (newline-terminated)
-                const lines = text.split('\n');
-                if (lines.length > 1) {
-                    // All lines except the last are complete
-                    complete = lines.slice(0, -1).join('\n') + '\n';
-                    incomplete = lines[lines.length - 1];
-                } else {
-                    // Single line without sentence ending
-                    // Strategy 3: For long text, render all but last word
-                    if (text.length > 50) {
-                        const words = text.trim().split(/\s+/);
-                        if (words.length > 1) {
-                            const lastWord = words[words.length - 1];
-                            complete = text.substring(0, text.lastIndexOf(lastWord));
-                            incomplete = lastWord;
-                        } else {
-                            // Single word - keep as incomplete
-                            complete = '';
-                            incomplete = text;
-                        }
-                    } else {
-                        // Short text without punctuation - keep as incomplete
-                        complete = '';
-                        incomplete = text;
-                    }
-                }
-            }
-
-            return { complete, incomplete };
-        }
-
         escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -2414,76 +2371,6 @@ ${poweredByHTML}
                 "'": '&#039;'
             };
             return String(text).replace(/[&<>"']/g, m => map[m]);
-        }
-
-        normalizeMarkdown(text) {
-            // Convert inline list patterns to proper markdown format
-            // Handles cases like: "text: - Item1. - Item2. - Item3"
-
-            // Pattern 1: Lists after colon or period with inline dashes
-            // Match: ": - " or ". - " followed by text
-            text = text.replace(/([:.]) - ([^\n-]+?)(\. - |\.$|$)/g, (match, separator, item, ending) => {
-                // Check if this looks like a list item (not just a dash in sentence)
-                if (item.length > 0 && item.length < 200) {
-                    if (ending === '. - ') {
-                        return `${separator}\n- ${item}\n`;
-                    } else {
-                        return `${separator}\n- ${item}${ending}`;
-                    }
-                }
-                return match;
-            });
-
-            // Pattern 2: Multiple inline dashes in a row (catch remaining)
-            // Match remaining inline " - " patterns not caught by Pattern 1
-            text = text.replace(/ - ([^-\n]{3,}?)(?=\. - | - |\.$|$)/g, (match, item) => {
-                if (item.trim().length > 0) {
-                    return `\n- ${item.trim()}`;
-                }
-                return match;
-            });
-
-            // Clean up any double newlines created
-            text = text.replace(/\n{3,}/g, '\n\n');
-
-            return text;
-        }
-
-        renderMarkdown(content) {
-            // Normalize inline lists to proper markdown format
-            content = this.normalizeMarkdown(content);
-            // Feature check
-            if (!CONFIG.enableMarkdown || !LIBRARIES_LOADED.marked || !LIBRARIES_LOADED.DOMPurify) {
-                // Fallback to plain text
-                return this.escapeHtml(content);
-            }
-
-            try {
-                // Configure marked
-                window.marked.setOptions({
-                    breaks: true,        // Convert \n to <br>
-                    gfm: true,          // GitHub Flavored Markdown
-                    headerIds: false,   // Don't add IDs to headers
-                    mangle: false       // Don't escape emails
-                });
-
-                // Render markdown
-                const rawHtml = window.marked.parse(content);
-
-                // Sanitize with DOMPurify
-                const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
-                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
-                                  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
-                                  'code', 'pre', 'hr'],
-                    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
-                    ALLOW_DATA_ATTR: false
-                });
-
-                return cleanHtml;
-            } catch (error) {
-                console.error('[Chatbot] Markdown rendering failed:', error);
-                return this.escapeHtml(content);
-            }
         }
 
         renderCard(cardData) {
@@ -2623,13 +2510,19 @@ ${poweredByHTML}
 
                 switch (messageData.type) {
                     case 'text':
-                        // Check if markdown is enabled and content has markdown syntax
-                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
-                            const html = this.renderMarkdown(messageData.content);
-                            contentDiv.innerHTML = html;
+                        // Render HTML content (server sends pre-formatted HTML)
+                        if (CONFIG.enableMarkdown) {
+                            // Sanitize and render HTML content
+                            const sanitized = window.DOMPurify.sanitize(messageData.content, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+                            contentDiv.innerHTML = sanitized;
                             contentDiv.classList.add('markdown');
                         } else {
-                            // Plain text (safe, uses textContent)
+                            // Plain text fallback (safe, uses textContent)
                             contentDiv.textContent = messageData.content;
                         }
                         break;
@@ -2765,49 +2658,39 @@ ${poweredByHTML}
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
-            // Detect user scrolling away from bottom during streaming
+            // Position-based scroll detection (no timers, instant response)
             const handleUserScroll = () => {
                 // Only care about scroll position during active streaming
                 if (!this.isActivelyStreaming) {
                     return;
                 }
 
-                // Check if user scrolled away from bottom
+                // Check if user is near bottom (within 100px)
                 const container = this.chatMessages;
-                const scrolledToBottom = Math.abs(
-                    container.scrollHeight - container.scrollTop - container.clientHeight
-                ) < 50; // 50px threshold
+                const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+                const isNearBottom = distanceFromBottom < 100;
 
-                if (!scrolledToBottom) {
-                    // User scrolled away from bottom - pause auto-scroll
-                    this.userIsScrolling = true;
-                    clearTimeout(this.scrollTimeout);
+                // Enable/disable auto-scroll based on position (no delays!)
+                this.userIsScrolling = !isNearBottom;
 
-                    // Resume auto-scroll after user stops for 1 second
-                    this.scrollTimeout = setTimeout(() => {
-                        this.userIsScrolling = false;
-                    }, 1000);
-                }
+                console.log('[Chatbot] Scroll position check:', {
+                    distanceFromBottom,
+                    isNearBottom,
+                    autoScrollEnabled: !this.userIsScrolling
+                });
             };
 
             this.chatMessages.addEventListener('scroll', handleUserScroll);
 
-            // Mobile: Detect touch interactions (user is manually scrolling)
+            // Mobile: Use same position-based detection (no 1-second delays)
             this.chatMessages.addEventListener('touchstart', () => {
-                if (this.isActivelyStreaming) {
-                    this.userIsScrolling = true;
-                    clearTimeout(this.scrollTimeout);
-                }
+                // Let the scroll handler manage auto-scroll state
+                // No need to block immediately
             });
 
             this.chatMessages.addEventListener('touchend', () => {
-                if (this.isActivelyStreaming) {
-                    // Resume auto-scroll after 1 second of no touch
-                    clearTimeout(this.scrollTimeout);
-                    this.scrollTimeout = setTimeout(() => {
-                        this.userIsScrolling = false;
-                    }, 1000);
-                }
+                // Position-based detection will handle this automatically
+                // No 1-second delay needed
             });
 
             // Keyboard shortcuts for accessibility
@@ -3038,7 +2921,116 @@ ${poweredByHTML}
                 this.panelChatInput.focus();
             }
         }
-        
+
+        /**
+         * HTMLStreamBuffer - Bulletproof HTML streaming with incomplete tag detection
+         * Handles tags split across chunks without breaking rendering
+         */
+        createHTMLStreamBuffer() {
+            return {
+                buffer: '',
+
+                /**
+                 * Process chunk and return only complete, safe-to-render HTML
+                 * Buffers incomplete tags/entities for next chunk
+                 */
+                processChunk(chunk) {
+                    // Add chunk to buffer
+                    this.buffer += chunk;
+
+                    // Find last safe position (complete tags only)
+                    const safeIndex = this.findLastSafePosition(this.buffer);
+
+                    if (safeIndex === 0) {
+                        // Everything is incomplete, buffer it all
+                        console.log('[HTMLBuffer] Buffering incomplete fragment:', this.buffer.length, 'chars');
+                        return '';
+                    }
+
+                    // Extract safe content (complete tags)
+                    const safeContent = this.buffer.substring(0, safeIndex);
+
+                    // Keep incomplete part in buffer for next chunk
+                    this.buffer = this.buffer.substring(safeIndex);
+
+                    if (this.buffer.length > 0) {
+                        console.log('[HTMLBuffer] Buffered incomplete:', JSON.stringify(this.buffer));
+                    }
+
+                    return safeContent;
+                },
+
+                /**
+                 * Find the last position where HTML is complete and safe to split
+                 * SIMPLIFIED STRATEGY (for innerHTML replacement):
+                 * - Only buffer truly incomplete fragments (tags, entities)
+                 * - All complete HTML renders immediately via innerHTML replacement
+                 * - Browser handles nesting correctly when parsing complete HTML string
+                 * Returns index of last safe character, or 0 if nothing is safe
+                 */
+                findLastSafePosition(html) {
+                    // STEP 1: Check for incomplete opening/closing tag at end
+                    // Examples: <p, <li, </b, <a href="..., <strong
+                    // Pattern: < followed by anything except >
+                    const incompleteTag = html.match(/<[^>]*$/);
+                    if (incompleteTag) {
+                        const incompleteStart = html.length - incompleteTag[0].length;
+                        console.log('[HTMLBuffer] Incomplete tag:', JSON.stringify(incompleteTag[0]));
+                        return incompleteStart;
+                    }
+
+                    // STEP 2: Check for incomplete HTML entity at end
+                    // Examples: &amp, &lt, &#123, &nbsp
+                    // Pattern: & followed by alphanumeric/# without semicolon
+                    const incompleteEntity = html.match(/&[a-zA-Z0-9#]*$/);
+                    if (incompleteEntity) {
+                        const incompleteStart = html.length - incompleteEntity[0].length;
+                        console.log('[HTMLBuffer] Incomplete entity:', JSON.stringify(incompleteEntity[0]));
+                        return incompleteStart;
+                    }
+
+                    // STEP 3: Check for word boundary - prevent mid-word splits for smooth rendering
+                    // If buffer doesn't end with space, punctuation, or tag closer, we might be mid-word
+                    const endsWithWordBoundary = /[\s\.,;:!?\)>\-]$/.test(html);
+                    if (!endsWithWordBoundary && html.length > 0) {
+                        // Find the last word boundary
+                        const lastBoundary = html.search(/[\s\.,;:!?\)>\-][^\s\.,;:!?\)>\-]*$/);
+                        if (lastBoundary !== -1) {
+                            // Found a boundary - split there (include the boundary character)
+                            console.log('[HTMLBuffer] Mid-word detected, buffering from last boundary');
+                            return lastBoundary + 1;
+                        }
+                    }
+
+                    // Everything is complete and safe - render immediately via innerHTML
+                    // Browser handles all nesting when parsing complete HTML string
+                    return html.length;
+                },
+
+                /**
+                 * Flush remaining buffer (called when stream ends)
+                 * Returns any buffered content (should be empty in well-formed HTML)
+                 */
+                flush() {
+                    const remaining = this.buffer;
+                    this.buffer = '';
+
+                    if (remaining.length > 0) {
+                        console.warn('[HTMLBuffer] Flushing incomplete HTML at stream end:', JSON.stringify(remaining));
+                    }
+
+                    return remaining;
+                },
+
+                /**
+                 * Reset buffer (for new messages)
+                 */
+                reset() {
+                    this.buffer = '';
+                }
+            };
+        }
+
         async sendMessage(content) {
             const messageTimestamp = new Date();
             this.addMessage(content, 'user');
@@ -3113,11 +3105,14 @@ ${poweredByHTML}
                 isStructured: false
             };
 
-            // Reset block-level rendering state
-            this.renderedContent = '';
-            this.pendingBuffer = '';
+            // Create HTML stream buffer for handling incomplete tags
+            const htmlBuffer = this.createHTMLStreamBuffer();
 
-            // Process queue: Block-level streaming with incremental markdown rendering
+            // ARCHITECTURAL REDESIGN: Track accumulated HTML for innerHTML replacement
+            // This solves the insertAdjacentHTML nesting problem permanently
+            let accumulatedSanitizedHTML = '';
+
+            // Process queue: innerHTML replacement strategy for bulletproof nested HTML
             const processQueue = () => {
                 if (isProcessingQueue) {
                     return;
@@ -3138,79 +3133,48 @@ ${poweredByHTML}
                 isProcessingQueue = true;
                 const chunk = chunkQueue.shift();
 
-                // Add chunk to total displayed content
+                // Add raw chunk to total displayed content (for history)
                 displayedContent += chunk;
                 this.streamingBuffer.content = displayedContent;
 
-                // NEW APPROACH: Block-level rendering
-                // Extract complete markdown blocks that can be safely rendered
-                const { complete, incomplete } = this.extractCompleteMarkdownBlocks(displayedContent);
-
+                // ARCHITECTURAL REDESIGN: innerHTML replacement for proper nesting
                 const messageDiv = document.getElementById(messageId);
                 if (messageDiv) {
                     const contentDiv = messageDiv.querySelector('.sw-message-content');
                     if (contentDiv) {
-                        // Check if we have markdown syntax
-                        const hasMarkdown = this.hasMarkdownSyntax(displayedContent);
-
-                        if (hasMarkdown && CONFIG.enableMarkdown) {
-                            // Ensure markdown class is ALWAYS applied
-                            if (!contentDiv.classList.contains('markdown')) {
-                                contentDiv.classList.add('markdown');
-                            }
-
-                            // TRUE APPEND-ONLY: Only render NEW complete content
-                            if (complete && complete !== this.renderedContent) {
-                                // Extract ONLY the new portion (avoid re-rendering)
-                                const newContent = complete.substring(this.renderedContent.length);
-
-                                if (newContent) {
-                                    // Remove old incomplete buffer before appending new content
-                                    const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
-                                    if (oldBuffer) {
-                                        oldBuffer.remove();
-                                    }
-
-                                    // Render and append ONLY the new content
-                                    const newHtml = this.renderMarkdown(newContent);
-                                    const newWrapper = document.createElement('span');
-                                    newWrapper.innerHTML = newHtml;
-                                    contentDiv.appendChild(newWrapper);
-
-                                    this.renderedContent = complete;
-                                    console.log('[Chatbot] Appended new complete block:', newContent.length, 'chars');
-                                }
-                            }
-
-                            // Update incomplete buffer (replace old one if exists)
-                            if (incomplete) {
-                                // Remove old buffer first
-                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
-                                if (oldBuffer) {
-                                    oldBuffer.remove();
-                                }
-
-                                // Add new buffer
-                                const bufferSpan = document.createElement('span');
-                                bufferSpan.className = 'sw-streaming-buffer';
-                                bufferSpan.textContent = incomplete;
-                                contentDiv.appendChild(bufferSpan);
-                                this.pendingBuffer = incomplete;
-                            } else {
-                                // No incomplete content - remove buffer if exists
-                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
-                                if (oldBuffer) {
-                                    oldBuffer.remove();
-                                }
-                                this.pendingBuffer = '';
-                            }
-                        } else {
-                            // Plain text rendering (no markdown syntax detected)
-                            contentDiv.textContent = displayedContent;
+                        // Ensure markdown class is applied for CSS styling
+                        if (!contentDiv.classList.contains('markdown')) {
+                            contentDiv.classList.add('markdown');
                         }
 
-                        // Simple scroll after update (throttled)
-                        this.scrollToBottomThrottled();
+                        // Process chunk through HTML buffer (handles incomplete tags)
+                        const completeHTML = htmlBuffer.processChunk(chunk);
+
+                        // Only proceed if we have complete HTML to render
+                        if (completeHTML) {
+                            // Add to accumulated HTML string
+                            accumulatedSanitizedHTML += completeHTML;
+
+                            // Sanitize the ENTIRE accumulated HTML as one cohesive structure
+                            const sanitized = window.DOMPurify.sanitize(accumulatedSanitizedHTML, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+
+                            // CRITICAL: Replace entire innerHTML (not append) to maintain proper nesting
+                            // This allows <li><b>text</b> to be parsed as one structure
+                            contentDiv.innerHTML = sanitized;
+                            console.log('[Chatbot] ✅ Rendered HTML (innerHTML replacement):', completeHTML.substring(0, 50) + '...');
+                        } else {
+                            console.log('[Chatbot] ⏳ Buffered chunk (incomplete), waiting...');
+                        }
+
+                        // Auto-scroll if user hasn't scrolled away
+                        if (!this.userIsScrolling) {
+                            this.scrollToBottom();
+                        }
                     }
                 }
 
@@ -3308,7 +3272,7 @@ ${poweredByHTML}
                                 // NEW: Add chunk to queue (only for text streaming, not structured data)
                                 if (chunkContent && !this.streamingBuffer.isStructured) {
                                     chunkQueue.push(chunkContent);
-                                    console.log('[Chatbot] Queued chunk:', chunkContent);
+                                    console.log('[Chatbot] 📥 Raw chunk received:', JSON.stringify(chunkContent));
 
                                     // Start processing if not already running
                                     if (!isProcessingQueue) {
@@ -3347,6 +3311,28 @@ ${poweredByHTML}
                 await queueFinishedPromise;
                 console.log('[Chatbot] Queue processing finished');
 
+                // Flush any remaining buffered HTML (incomplete tags at stream end)
+                const messageDiv = document.getElementById(messageId);
+                if (messageDiv) {
+                    const contentDiv = messageDiv.querySelector('.sw-message-content');
+                    if (contentDiv) {
+                        const remainingHTML = htmlBuffer.flush();
+                        if (remainingHTML) {
+                            // Sanitize and append any remaining content
+                            const sanitized = window.DOMPurify.sanitize(remainingHTML, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+                            if (sanitized.trim()) {
+                                contentDiv.insertAdjacentHTML('beforeend', sanitized);
+                                console.log('[Chatbot] Flushed remaining HTML:', sanitized.length, 'chars');
+                            }
+                        }
+                    }
+                }
+
                 // Hide typing indicator after queue is done
                 this.hideTypingIndicator(messageId);
 
@@ -3354,64 +3340,21 @@ ${poweredByHTML}
                 console.log('[SCROLL-DEBUG] ========== STREAMING ENDED ==========');
                 this.isActivelyStreaming = false;
 
-                // FINALIZATION: Render any remaining incomplete buffer
+                // FINALIZATION: Simple cleanup and save
+                console.log('[Chatbot] Finalizing stream');
+
+                // Final scroll to bottom (allow auto-scroll)
+                this.userIsScrolling = false;
+                this.scrollToBottom(false);
+
+                // Save to message history - use displayed content (what actually showed to user)
                 const finalContent = displayedContent || this.streamingBuffer.content;
-                if (finalContent && typeof finalContent === 'string') {
-                    console.log('[Chatbot] Finalizing content rendering');
-
-                    const messageDiv = document.getElementById(messageId);
-                    if (messageDiv) {
-                        const contentDiv = messageDiv.querySelector('.sw-message-content');
-                        if (contentDiv) {
-                            // If there's any pending buffer, render it as complete
-                            if (this.pendingBuffer) {
-                                const hasMarkdown = this.hasMarkdownSyntax(this.pendingBuffer);
-
-                                // Remove the buffer span first
-                                const oldBuffer = contentDiv.querySelector('.sw-streaming-buffer');
-                                if (oldBuffer) {
-                                    oldBuffer.remove();
-                                }
-
-                                if (hasMarkdown && CONFIG.enableMarkdown) {
-                                    // Ensure markdown class is applied
-                                    if (!contentDiv.classList.contains('markdown')) {
-                                        contentDiv.classList.add('markdown');
-                                    }
-
-                                    // Render ONLY the pending buffer (not entire message)
-                                    const bufferHtml = this.renderMarkdown(this.pendingBuffer);
-                                    const bufferWrapper = document.createElement('span');
-                                    bufferWrapper.innerHTML = bufferHtml;
-                                    contentDiv.appendChild(bufferWrapper);
-                                } else {
-                                    // Plain text - just append as text node
-                                    const textNode = document.createTextNode(this.pendingBuffer);
-                                    contentDiv.appendChild(textNode);
-                                }
-
-                                console.log('[Chatbot] Rendered final pending buffer:', this.pendingBuffer.length, 'chars');
-                                this.pendingBuffer = '';
-                            }
-
-                            // Final scroll
-                            this.scrollToBottom(false);
-                        }
-                    }
-                }
-
-                // Final save - use displayed content (what actually showed to user)
-
                 if (finalContent) {
-                    console.log('[Chatbot] Saving final content, length:', typeof finalContent === 'string' ? finalContent.length : 'structured');
-
-                    // Add bot response to message history and persist
-                    const contentText = typeof finalContent === 'string' ? finalContent : JSON.stringify(finalContent);
-                    this.messageHistory.push({ role: 'bot', content: contentText, time: new Date() });
+                    console.log('[Chatbot] Saving final content, length:', finalContent.length, 'chars');
+                    this.messageHistory.push({ role: 'bot', content: finalContent, time: new Date() });
                     this.saveConversation();
                 } else {
-                    // Check if we got any content
-                    console.error('[Chatbot] No content extracted from stream');
+                    console.error('[Chatbot] No content received from stream');
                     this.updateMessage(messageId, '⚠️ No content received from stream');
                     this.messageHistory.push({ role: 'bot', content: '⚠️ No content received from stream', time: new Date() });
                     this.saveConversation();
