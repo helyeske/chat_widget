@@ -109,25 +109,6 @@ The widget initializes automatically and appears in the bottom-right corner of y
 </script>
 <script src="https://your-domain.pages.dev/chat-widget.js" defer></script>
 ```
-
-### Backward Compatible Configuration
-
-The widget also supports legacy flat configuration:
-
-```html
-<script>
-  window.ChatbotConfig = {
-    apiEndpoint: 'https://your-api-endpoint.com/chat',
-    quickQuestions: [
-      { text: "Question 1", emoji: "🎓" },
-      { text: "Question 2", emoji: "📝" }
-    ],
-    enableRichContent: true,
-    enableMarkdown: true
-  };
-</script>
-```
-
 ---
 
 ## API Requirements
@@ -183,21 +164,6 @@ All interactions are touch-optimized with minimum 32px tap targets.
 
 ---
 
-## Deployment
-
-### Cloudflare Pages (Recommended)
-
-1. Deploy files to Cloudflare Pages
-2. Configure custom domain (optional)
-3. Update integration code with your CDN URL
-
-### GitHub Pages
-
-1. Upload `chat-widget.js` to your repository
-2. Enable GitHub Pages
-3. Reference the file in your integration code
-
----
 
 ## Troubleshooting
 
@@ -220,15 +186,8 @@ All interactions are touch-optimized with minimum 32px tap targets.
 ## Support
 
 **Commercial Support**
-- Email: support@fylio.com
-- Documentation: https://docs.fylio.com
+- Email: mark@fylio.com
 - Integration Help: Available to enterprise customers
-
-**Enterprise Features**
-- White-label options
-- Custom integrations
-- Priority support
-- SLA guarantees
 
 ---
 
@@ -246,4 +205,4 @@ For licensing inquiries, contact: sales@fylio.com
 
 Fylio builds intelligent conversation experiences for modern websites. Our AI chat widgets combine cutting-edge technology with beautiful design to help businesses engage their visitors.
 
-Learn more at [fylio.com](https://fylio.com)
+Learn more at [fylio.hu](https://fylio.hu)

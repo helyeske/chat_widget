@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Semmelweis University Chatbot Widget Demo</title>
     <style>
+        :root {
+            --navy-blue: #23305F;
+            --gold-tan: #B3A16E;
+            --gold-tan-light: #B8A978;
+            --white: #FFFFFF;
+            --white-80: rgba(255, 255, 255, 0.8);
+            --white-10: rgba(255, 255, 255, 0.1);
+            --white-05: rgba(255, 255, 255, 0.05);
+            --black-40: rgba(0, 0, 0, 0.4);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,53 +24,73 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--white);
             min-height: 100vh;
             padding: 20px;
         }
 
         .demo-content {
             text-align: center;
-            color: white;
-            max-width: 800px;
+            max-width: 1300px;
             margin: 0 auto;
             padding-top: 60px;
+        }
+
+        .main-header {
+            background: var(--gold-tan);
+            color: white;
+            padding: 40px 20px;
+            margin: -60px -20px 60px -20px;
         }
 
         .demo-content h1 {
             font-size: 48px;
             margin-bottom: 16px;
             font-weight: 700;
+            color: white;
         }
 
-        .demo-content p {
+        .demo-content .main-header p {
             font-size: 20px;
             opacity: 0.9;
-            margin-bottom: 32px;
+            margin-bottom: 0;
+            color: white;
+        }
+
+        .section-header {
+            background: var(--gold-tan);
+            color: white;
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-bottom: -15px;
+            position: relative;
+            z-index: 10;
+            border-radius: 0px 0px 0 0;
         }
 
         .demo-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            background: var(--navy-blue);
             padding: 32px;
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 40px;
+            border: 1px solid var(--white-10);
+            margin-bottom: 50px;
             text-align: left;
-        }
-
-        .demo-card h2 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            color: white;
         }
 
         .demo-card p {
             font-size: 16px;
             line-height: 1.6;
             margin-bottom: 16px;
+            color: white;
+        }
+
+        .demo-card code {
+            color: var(--gold-tan-light);
         }
 
         .demo-card ul {
@@ -80,22 +111,26 @@
             border-bottom: none;
         }
 
+        .demo-card li {
+            color: white;
+        }
+
         .demo-card li::before {
             content: '✓';
             display: inline-block;
             width: 24px;
             height: 24px;
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--gold-tan);
+            color: var(--navy-blue);
             border-radius: 50%;
             text-align: center;
             line-height: 24px;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         .code-block {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.4);
             padding: 20px;
             margin: 20px 0;
             font-family: 'Courier New', monospace;
@@ -107,18 +142,21 @@
         .btn {
             display: inline-block;
             padding: 14px 32px;
-            background: white;
-            color: #667eea;
+            background: var(--gold-tan);
+            color: white;
             text-decoration: none;
-            border-radius: 12px;
+            border-radius: 6px;
             font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
             margin-top: 20px;
         }
 
         .btn:hover {
+            background: var(--gold-tan-light);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(179, 161, 110, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -126,25 +164,32 @@
                 font-size: 32px;
             }
 
-            .demo-card {
-                padding: 24px;
+            .main-header {
+                padding: 30px 20px;
             }
 
-            .demo-card h2 {
-                font-size: 22px;
+            .section-header {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+
+            .demo-card {
+                padding: 24px;
             }
         }
     </style>
 </head>
 <body>
     <div class="demo-content">
-        <h1>🎓 Semmelweis University</h1>
-        <p>AI-Powered Chatbot Widget - Live Demo</p>
-        
+        <div class="main-header">
+            <h1>🎓 Center of Translational Medicine</h1>
+            <p>AI-Powered Chatbot Widget - Live Demo</p>
+        </div>
+
+        <h2 class="section-header">💬 About This Widget</h2>
         <div class="demo-card">
-            <h2>💬 About This Widget</h2>
             <p>This is a production-ready chat widget for Semmelweis University's Translational Medicine Centre. The widget provides instant answers about programs, admissions, tuition, and more.</p>
-            
+
             <ul>
                 <li>Real-time streaming responses via SSE</li>
                 <li>Responsive design (mobile & desktop)</li>
@@ -155,22 +200,22 @@
             </ul>
         </div>
 
+        <h2 class="section-header">🚀 Quick Integration</h2>
         <div class="demo-card">
-            <h2>🚀 Quick Integration</h2>
             <p>Add this single line before your closing <code>&lt;/body&gt;</code> tag:</p>
-            
+
             <div class="code-block">
-&lt;!-- Semmelweis Chatbot Widget --&gt;<br>
-&lt;script src="https://your-project.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
+&lt;!-- CTM Chatbot Widget --&gt;<br>
+&lt;script src="https://chat-widget-ab1.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
             </div>
 
             <p>That's it! The widget will automatically appear on your website.</p>
         </div>
 
+        <h2 class="section-header">⚙️ Custom Configuration (Optional)</h2>
         <div class="demo-card">
-            <h2>⚙️ Custom Configuration (Optional)</h2>
             <p>Override default settings by adding this before the widget script:</p>
-            
+
             <div class="code-block">
 &lt;script&gt;<br>
 &nbsp;&nbsp;window.ChatbotConfig = {<br>
@@ -182,14 +227,14 @@
 &nbsp;&nbsp;&nbsp;&nbsp;]<br>
 &nbsp;&nbsp;};<br>
 &lt;/script&gt;<br>
-&lt;script src="https://your-project.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
+&lt;script src="https://chat-widget-ab1.pages.dev/chat-widget.js" defer&gt;&lt;/script&gt;
             </div>
         </div>
 
+        <h2 class="section-header">🎨 Try It Now!</h2>
         <div class="demo-card">
-            <h2>🎨 Try It Now!</h2>
             <p>Look for the chat bubble in the bottom-right corner or the floating chat bar at the bottom of the page. Click to start chatting!</p>
-            
+
         </div>
 
     </div>
