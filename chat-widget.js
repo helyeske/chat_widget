@@ -51,6 +51,17 @@
     };
 
     const DEFAULT_CONFIG = {
+        // Master Kill Switch - Emergency disable for critical issues
+        enabled: true,  // Set to false to completely disable the widget
+
+        // Disabled State Message (optional) - Shows when enabled = false
+        disabledMessage: {
+            enabled: true,  // Show message instead of hiding completely
+            title: "Chat temporarily unavailable",
+            text: "We're currently performing maintenance. Please contact us directly:",
+            contact: "support@example.com"  // Email, phone, or alternative contact method
+        },
+
         // API Configuration
         apiEndpoint: 'https://ctm-chat.fylio.workers.dev',
         retries: 2,
@@ -58,7 +69,7 @@
         streamBatchIntervalMs: 1000,
         streamChunkDelayMs: 80,  // Delay between displaying chunks from queue (legacy, kept for compatibility)
         streamCharDelayMs: 10,   // Milliseconds per character for typewriter effect (30ms = ~33 chars/sec, smooth and readable)
-        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
+        fallbackResponse: "Opps! I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.",
 
         // Branding & Customization
         branding: {
@@ -87,7 +98,7 @@
         ui: {
             showFloatingBar: true,  // Show/hide the floating chat input bar at the bottom
             showPoweredBy: true,    // Show/hide "Powered by" attribution
-            showBetaBadge: false     // Show/hide Beta label next to "Powered by"
+            showBetaBadge: true     // Show/hide Beta label next to "Powered by"
         },
 
         // Powered By Attribution (internal - not user configurable)
@@ -331,7 +342,7 @@
         .sw-chat-input-bar.dismissed {
             display: none;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 639px) {
             .sw-chat-input-bar {
                 display: none !important;
             }
@@ -599,7 +610,7 @@
             backdrop-filter: none;
             border: none;
 
-            color: var(--sw-text-secondary); /* Harmonizes with UI color system */
+            color: #000000; /* Black icon */
             cursor: pointer;
 
             display: flex;
@@ -615,7 +626,7 @@
             background: rgba(0, 0, 0, 0.06);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--sw-text-primary); /* Dash becomes more prominent */
+            color: #000000; /* Keep black on hover */
             transform: scale(1.02);
         }
 
@@ -641,8 +652,7 @@
             backdrop-filter: none;
             border: none;
 
-            color: var(--sw-text-secondary); /* Harmonizes with UI color system */
-            opacity: 0.7; /* More subtle as secondary action */
+            color: #000000; /* Black icon */
             cursor: pointer;
 
             display: flex;
@@ -658,8 +668,7 @@
             background: rgba(0, 0, 0, 0.06);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--sw-text-primary);
-            opacity: 1;
+            color: #000000; /* Keep black on hover */
             transform: scale(1.02);
         }
 
@@ -667,6 +676,51 @@
             width: 18px;
             height: 18px;
             transition: all var(--sw-timing-fast) var(--sw-ease-premium);
+        }
+
+        /* Header Button Tooltips - Appear BELOW buttons to avoid cut-off */
+        .sw-header-new-chat-btn::after,
+        .sw-header-minimize-btn::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 8px);  /* Below the button */
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--sw-primary);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        /* Upward-pointing arrow for header tooltips */
+        .sw-header-new-chat-btn::before,
+        .sw-header-minimize-btn::before {
+            content: '';
+            position: absolute;
+            top: calc(100% + 2px);  /* Just below button */
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: var(--sw-primary);  /* Arrow points UP */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+        }
+
+        .sw-header-new-chat-btn:hover::after,
+        .sw-header-new-chat-btn:hover::before,
+        .sw-header-minimize-btn:hover::after,
+        .sw-header-minimize-btn:hover::before {
+            opacity: 1;
+            transition-delay: 0.8s;
         }
 
         /* Header Background - Frosted Glass (iMessage style) */
@@ -1128,16 +1182,21 @@
             height: 16px;
         }
 
-        /* Powered by Fylio Attribution */
+        /* Powered by Fylio Attribution - Outer container */
         .sw-powered-by {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;  /* Space between badge and "Powered by" text */
+            justify-content: center;  /* Centers the inner content wrapper */
             padding: 0;
             font-size: 11px;
             color: #9ca3af;
             flex-shrink: 0;
+        }
+
+        /* Inner content wrapper - centered with badge */
+        .sw-powered-by-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .sw-powered-by-text {
@@ -1174,7 +1233,7 @@
             letter-spacing: -0.01em;
         }
 
-        /* Beta Badge - Inline flex item that centers with "Powered by" */
+        /* Beta Badge - Centered with powered by content */
         .sw-beta-badge {
             display: inline-flex;
             align-items: center;
@@ -1187,13 +1246,7 @@
             letter-spacing: 0.03em;
             text-transform: uppercase;
             cursor: help;
-            transition: transform 0.2s ease;
             flex-shrink: 0;
-            position: relative;  /* For tooltip positioning */
-        }
-
-        .sw-beta-badge:hover {
-            transform: translateY(-1px);
         }
 
         /* Custom Tooltip - Primary Color with Multi-line */
@@ -1202,7 +1255,7 @@
             position: absolute;
             bottom: calc(100% + 8px);
             left: 50%;
-            transform: translateX(-50%) translateY(-4px);
+            transform: translateX(-50%);
             background: var(--sw-primary);
             color: white;
             padding: 8px 12px;
@@ -1216,7 +1269,7 @@
             text-align: center;
             opacity: 0;
             pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
         }
@@ -1231,17 +1284,17 @@
             border-top-color: var(--sw-primary);
             opacity: 0;
             pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
         }
 
         .sw-beta-badge:hover::after,
         .sw-beta-badge:hover::before {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transition-delay: 0.8s;
         }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
+        /* Mobile Responsive (< 640px: Full-screen | ≥ 640px: Side panel) */
+        @media (max-width: 639px) {
             /* Fix body scroll on mobile */
             body.sw-chat-open {
                 overflow: hidden;
@@ -1268,6 +1321,8 @@
                 left: 0;
                 bottom: 0;
                 width: 100%;
+                max-width: none; /* Override base max-width for true full-screen */
+                min-width: 0; /* Override base min-width */
                 height: 100vh;
                 height: 100dvh; /* ADD: Dynamic viewport height */
                 border-radius: 0;
@@ -1302,6 +1357,28 @@
             .sw-header-minimize-btn svg {
                 width: 16px;
                 height: 16px;
+            }
+
+            .sw-header-new-chat-btn {
+                top: 18px; /* Aligned with mobile pill vertical center */
+                left: 12px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .sw-header-new-chat-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Hide all tooltips on mobile - no hover state on touch devices */
+            .sw-header-new-chat-btn::after,
+            .sw-header-new-chat-btn::before,
+            .sw-header-minimize-btn::after,
+            .sw-header-minimize-btn::before,
+            .sw-beta-badge::after,
+            .sw-beta-badge::before {
+                display: none !important;
             }
 
             .sw-header-background {
@@ -1366,6 +1443,132 @@
         @media (max-width: 480px) {
             .sw-chat-panel {
                 padding: 8px;
+            }
+        }
+
+        /* Ultra-small screens (≤270px): Scale everything down to prevent overflow */
+        @media (max-width: 270px) {
+            /* Header scaling */
+            .sw-chat-header {
+                padding: 6px 8px 6px 6px;
+                max-width: calc(100% - 60px);
+            }
+
+            .sw-chat-header-title {
+                font-size: 13px;
+            }
+
+            .sw-chat-logo {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+
+            .sw-header-minimize-btn,
+            .sw-header-new-chat-btn {
+                width: 32px;
+                height: 32px;
+                top: 16px;
+            }
+
+            .sw-header-minimize-btn {
+                right: 8px;
+            }
+
+            .sw-header-new-chat-btn {
+                left: 8px;
+            }
+
+            .sw-header-minimize-btn svg,
+            .sw-header-new-chat-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Message area scaling */
+            .sw-chat-messages {
+                padding: 80px 12px 12px 8px;
+            }
+
+            .sw-message-content {
+                padding: 12px 14px;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .sw-message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            /* Quick questions scaling */
+            .sw-quick-question-btn {
+                font-size: 13px;
+                padding: 10px 14px;
+                gap: 6px;
+            }
+
+            .sw-quick-question-emoji {
+                font-size: 16px;
+                width: 20px;
+                height: 20px;
+            }
+
+            .sw-quick-questions-header {
+                font-size: 11px;
+                padding: 10px 0 8px;
+                gap: 4px;
+            }
+
+            .sw-quick-questions-header-emoji {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Input area scaling */
+            .sw-chat-input-area {
+                padding: 6px;
+                margin: 0 4px 4px 4px;
+            }
+
+            .sw-panel-chat-input {
+                font-size: 14px !important;
+                padding: 10px 12px;
+            }
+
+            .sw-panel-send-btn {
+                width: 32px;
+                height: 32px;
+            }
+
+            .sw-panel-send-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Powered by scaling */
+            .sw-powered-by {
+                font-size: 9px;
+                gap: 3px;
+            }
+
+            .sw-powered-by-icon {
+                width: 10px;
+                height: 10px;
+            }
+
+            /* Widget bubble scaling */
+            .sw-chat-widget-bubble {
+                width: 48px;
+                height: 48px;
+                bottom: 12px;
+                right: 12px;
+            }
+
+            .sw-chat-widget-bubble svg {
+                width: 28px;
+                height: 28px;
             }
         }
 
@@ -1637,6 +1840,15 @@
             margin: 8px 0;
         }
 
+        /* Remove extra spacing at start and end of message bubble */
+        .sw-message-content.markdown > *:first-child {
+            margin-top: 0;
+        }
+
+        .sw-message-content.markdown > *:last-child {
+            margin-bottom: 0;
+        }
+
         .sw-message-content.markdown a {
             color: var(--sw-primary);
             text-decoration: none;
@@ -1869,7 +2081,7 @@
         }
 
         /* Mobile Responsive Cards */
-        @media (max-width: 768px) {
+        @media (max-width: 639px) {
             .sw-card-image {
                 height: 140px;
             }
@@ -1877,6 +2089,120 @@
             .sw-card-carousel .sw-card {
                 min-width: 240px;
                 max-width: 240px;
+            }
+        }
+
+        /* ========================================
+           DISABLED WIDGET STATE
+           ======================================== */
+
+        /* Disabled state - grey, inactive appearance */
+        .sw-widget-disabled #sw-chat-widget-bubble {
+            background: rgba(156, 163, 175, 0.8) !important;
+            cursor: not-allowed !important;
+            pointer-events: all !important;
+        }
+
+        .sw-widget-disabled .sw-chat-input-bar {
+            background: rgba(156, 163, 175, 0.8) !important;
+            cursor: not-allowed !important;
+            pointer-events: all !important;
+        }
+
+        /* Remove all animations and transitions in disabled state */
+        .sw-widget-disabled #sw-chat-widget-bubble *,
+        .sw-widget-disabled .sw-chat-input-bar * {
+            animation: none !important;
+        }
+
+        .sw-widget-disabled .sw-chat-widget-bubble,
+        .sw-widget-disabled .sw-chat-input-bar {
+            animation: none !important;
+        }
+
+        /* Remove hover effects */
+        .sw-widget-disabled #sw-chat-widget-bubble:hover,
+        .sw-widget-disabled .sw-chat-input-bar:hover {
+            transform: none !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        /* Disabled tooltip - shows maintenance message with primary color */
+        .sw-widget-disabled #sw-chat-widget-bubble::after {
+            content: attr(data-disabled-text) " " attr(data-disabled-contact);
+            white-space: normal;
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            max-width: 340px;
+            padding: 16px 20px;
+            background: var(--sw-primary) !important;
+            color: white !important;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.6;
+            opacity: 0 !important;
+            pointer-events: none;
+            transform: translateY(0);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            isolation: isolate;
+            will-change: opacity, transform;
+        }
+
+        /* Arrow pointer for disabled tooltip */
+        .sw-widget-disabled #sw-chat-widget-bubble::before {
+            content: '';
+            position: fixed;
+            bottom: 94px;
+            right: calc(24px + 140px - 6px);
+            border: 6px solid transparent;
+            border-top-color: var(--sw-primary) !important;
+            opacity: 0 !important;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+            z-index: 999999;
+            isolation: isolate;
+            will-change: opacity, transform;
+        }
+
+        .sw-widget-disabled #sw-chat-widget-bubble:hover::after,
+        .sw-widget-disabled #sw-chat-widget-bubble:hover::before {
+            opacity: 1 !important;
+            transition-delay: 0.8s;
+        }
+
+        /* Prevent panel from opening */
+        .sw-widget-disabled #sw-chat-panel {
+            display: none !important;
+        }
+
+        /* Hide floating bar when disabled - only show bubble */
+        .sw-widget-disabled .sw-chat-input-bar {
+            display: none !important;
+        }
+
+        /* Mobile responsive disabled tooltip */
+        @media (max-width: 639px) {
+            .sw-widget-disabled #sw-chat-widget-bubble::after {
+                right: 16px;
+                left: 16px;
+                max-width: none;
+                bottom: 90px;
+            }
+
+            .sw-widget-disabled #sw-chat-widget-bubble::before {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: 84px;
+            }
+
+            .sw-widget-disabled #sw-chat-widget-bubble:hover::before {
+                transform: translateX(-50%) translateY(0);
             }
         }
     `;
@@ -1903,15 +2229,22 @@
             `<span class="sw-beta-badge" data-tooltip="${tooltipText}">Beta</span>`
             : '';
 
-        const poweredByHTML = showPoweredBy ? `
-                    <!-- Powered by Attribution -->
+        // Powered by content (text + link) - only if enabled
+        const poweredByContentHTML = showPoweredBy ? `
+                            <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
+                            <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
+                                <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
+                                <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
+                            </a>` : '';
+
+        // Show container if EITHER powered by OR beta badge is enabled
+        const poweredByHTML = (showPoweredBy || showBetaBadge) ? `
+                    <!-- Powered by Attribution / Beta Badge -->
                     <div class="sw-powered-by">
-                        ${betaBadgeHTML}
-                        <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
-                        <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
-                            <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
-                            <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
-                        </a>
+                        <div class="sw-powered-by-content">
+                            ${betaBadgeHTML}
+                            ${poweredByContentHTML}
+                        </div>
                     </div>` : '';
 
         // Conditionally include floating bar based on ui.showFloatingBar
@@ -1963,7 +2296,7 @@
                 </div>
 
                 <!-- External New Chat Button -->
-                <button id="sw-panel-new-chat-btn" class="sw-header-new-chat-btn" title="Start a new conversation" aria-label="Start a new conversation">
+                <button id="sw-panel-new-chat-btn" class="sw-header-new-chat-btn" data-tooltip="New chat" aria-label="Start a new conversation">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                         <line x1="8" y1="3" x2="8" y2="13"/>
                         <line x1="3" y1="8" x2="13" y2="8"/>
@@ -1971,7 +2304,7 @@
                 </button>
 
                 <!-- External Minimize Button -->
-                <button id="sw-panel-close-btn" class="sw-header-minimize-btn" title="Minimize chat" aria-label="Minimize chat">
+                <button id="sw-panel-close-btn" class="sw-header-minimize-btn" data-tooltip="Minimize" aria-label="Minimize chat">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                         <line x1="3" y1="8" x2="13" y2="8"/>
                     </svg>
@@ -2123,9 +2456,14 @@ ${poweredByHTML}
             this.scrollTimeout = null;
             this.scrollPending = false; // Prevent overlapping scroll requests
             this.isActivelyStreaming = false; // Track active streaming for auto-scroll behavior
+            this.isAutoScrolling = false; // Track when we're programmatically scrolling (not user)
             this.isAnimating = false; // Legacy flag, kept for compatibility
             this.lastScrollTime = 0; // Throttle scroll updates
             this.scrollThrottleDelay = 30; // Match chunk processing delay (30ms)
+            this.shouldAutoScroll = true; // User preference for auto-scroll (industry standard pattern)
+            this.scrollObserver = null; // MutationObserver for content changes (industry standard)
+            this.manualScrollTimeout = null; // Debounce manual scroll detection
+            this.userIsActivelyScrolling = false; // Track if user is CURRENTLY scrolling (immediate detection)
 
             // Animation guard for robust state management
             this.animationLock = {
@@ -2658,29 +2996,7 @@ ${poweredByHTML}
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
-            // Position-based scroll detection (no timers, instant response)
-            const handleUserScroll = () => {
-                // Only care about scroll position during active streaming
-                if (!this.isActivelyStreaming) {
-                    return;
-                }
-
-                // Check if user is near bottom (within 100px)
-                const container = this.chatMessages;
-                const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-                const isNearBottom = distanceFromBottom < 100;
-
-                // Enable/disable auto-scroll based on position (no delays!)
-                this.userIsScrolling = !isNearBottom;
-
-                console.log('[Chatbot] Scroll position check:', {
-                    distanceFromBottom,
-                    isNearBottom,
-                    autoScrollEnabled: !this.userIsScrolling
-                });
-            };
-
-            this.chatMessages.addEventListener('scroll', handleUserScroll);
+            // No scroll event handler needed - we use stateless position checks instead!
 
             // Mobile: Use same position-based detection (no 1-second delays)
             this.chatMessages.addEventListener('touchstart', () => {
@@ -2859,6 +3175,12 @@ ${poweredByHTML}
         async sendQuickQuestion(question) {
             this.hideQuickQuestions();
             this.firstMessageSent = true;
+
+            // User explicitly clicked a question - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            this.userIsActivelyScrolling = false;
+            console.log('[AutoScroll] User clicked quick question, enabling auto-scroll');
+
             this.sendMessage(question);
         }
         
@@ -2893,6 +3215,12 @@ ${poweredByHTML}
             }
 
             this.openPanelImmediate();  // Immediate open for task completion - no animation delay
+
+            // User explicitly sent a message - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            this.userIsActivelyScrolling = false;
+            console.log('[AutoScroll] User sent message from bar, enabling auto-scroll');
+
             this.sendMessage(message);
         }
         
@@ -2909,6 +3237,11 @@ ${poweredByHTML}
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
+
+            // User explicitly sent a message - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            this.userIsActivelyScrolling = false;
+            console.log('[AutoScroll] User sent message, enabling auto-scroll');
 
             try {
                 await this.sendMessage(message);
@@ -3171,10 +3504,7 @@ ${poweredByHTML}
                             console.log('[Chatbot] ⏳ Buffered chunk (incomplete), waiting...');
                         }
 
-                        // Auto-scroll if user hasn't scrolled away
-                        if (!this.userIsScrolling) {
-                            this.scrollToBottom();
-                        }
+                        // Auto-scroll handled by MutationObserver - no manual scroll needed
                     }
                 }
 
@@ -3343,9 +3673,7 @@ ${poweredByHTML}
                 // FINALIZATION: Simple cleanup and save
                 console.log('[Chatbot] Finalizing stream');
 
-                // Final scroll to bottom (allow auto-scroll)
-                this.userIsScrolling = false;
-                this.scrollToBottom(false);
+                // Auto-scroll handled by MutationObserver - no manual scroll needed
 
                 // Save to message history - use displayed content (what actually showed to user)
                 const finalContent = displayedContent || this.streamingBuffer.content;
@@ -3355,8 +3683,8 @@ ${poweredByHTML}
                     this.saveConversation();
                 } else {
                     console.error('[Chatbot] No content received from stream');
-                    this.updateMessage(messageId, '⚠️ No content received from stream');
-                    this.messageHistory.push({ role: 'bot', content: '⚠️ No content received from stream', time: new Date() });
+                    this.updateMessage(messageId, 'Oops! I am sorry, I am having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.');
+                    this.messageHistory.push({ role: 'bot', content: 'Oops! I am sorry, I am having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.', time: new Date() });
                     this.saveConversation();
                 }
             }
@@ -3427,6 +3755,10 @@ ${poweredByHTML}
 
             // Prevent body scroll on mobile (with position preservation)
             this.preventBodyScroll();
+
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
 
             // Show quick questions on first open (timestamp only appears after first Q&A pair)
             // But NOT when sending from floating bar (firstMessageSent will be true)
@@ -3564,6 +3896,10 @@ ${poweredByHTML}
             panel.style.transform = 'translateY(calc(100% + 50px))';  // Position below viewport
             panel.style.transition = 'none';  // Disable transitions initially
             panel.classList.add('visible');
+
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
 
             if (header) header.classList.add('hidden-during-animation');
 
@@ -3713,6 +4049,11 @@ ${poweredByHTML}
             // Fast panel animation: shorter duration, less transform
             this.isPanelOpen = true;
             panel.classList.add('visible');
+
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
+
             panel.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease';
 
             // Panel starts slightly below and scaled down
@@ -3845,7 +4186,8 @@ ${poweredByHTML}
 
             this.messageHistory.push({ role: sender, content, time: new Date() });
             this.saveConversation();  // Persist conversation to localStorage
-            this.scrollToBottom();
+
+            // Auto-scroll handled by MutationObserver - no manual scroll needed
         }
         
         addBotMessage(messageId, content) {
@@ -3883,7 +4225,7 @@ ${poweredByHTML}
                 this.renderContentToDOM(contentDiv, content);
             }
 
-            this.scrollToBottom();
+            // Auto-scroll handled by MutationObserver - no manual scroll needed
         }
 
         updateMessage(messageId, content) {
@@ -3955,9 +4297,95 @@ ${poweredByHTML}
             }
         }
 
+        // ========================================
+        // INDUSTRY STANDARD AUTO-SCROLL SYSTEM
+        // ========================================
+
+        setupScrollListener() {
+            if (!this.chatMessages) {
+                console.warn('[AutoScroll] Cannot setup scroll listener - chatMessages not found');
+                return;
+            }
+
+            console.log('[AutoScroll] Setting up scroll event listener');
+
+            this.chatMessages.addEventListener('scroll', () => {
+                // Ignore programmatic scrolls
+                if (this.isAutoScrolling) {
+                    console.log('[AutoScroll] Ignoring programmatic scroll');
+                    return;
+                }
+
+                // IMMEDIATELY mark that user is actively scrolling (critical for responsiveness)
+                this.userIsActivelyScrolling = true;
+                console.log('[AutoScroll] User is actively scrolling - pausing auto-scroll');
+
+                // Debounce - wait 150ms after user stops scrolling
+                clearTimeout(this.manualScrollTimeout);
+                this.manualScrollTimeout = setTimeout(() => {
+                    // User stopped scrolling, clear the active flag
+                    this.userIsActivelyScrolling = false;
+
+                    // Check if user is at bottom NOW
+                    const isAtBottom = this.isNearBottom();
+
+                    // Update auto-scroll preference based on their final position
+                    this.shouldAutoScroll = isAtBottom;
+
+                    console.log('[AutoScroll] User stopped scrolling, shouldAutoScroll:', this.shouldAutoScroll);
+                }, 150);
+            });
+        }
+
+        setupScrollObserver() {
+            if (!this.chatMessages) {
+                console.warn('[AutoScroll] Cannot setup observer - chatMessages not found');
+                return;
+            }
+
+            // Disconnect existing observer if any
+            if (this.scrollObserver) {
+                this.scrollObserver.disconnect();
+                console.log('[AutoScroll] Disconnected existing observer');
+            }
+
+            console.log('[AutoScroll] Setting up MutationObserver');
+
+            // Create observer that watches for content changes
+            this.scrollObserver = new MutationObserver(() => {
+                // CRITICAL: Don't interrupt if user is actively scrolling (immediate respect)
+                if (this.userIsActivelyScrolling) {
+                    console.log('[AutoScroll] User is actively scrolling, not interrupting');
+                    return;
+                }
+
+                // Only scroll if user wants auto-scroll (based on their final position)
+                if (!this.shouldAutoScroll) {
+                    console.log('[AutoScroll] Content changed but user scrolled up, not auto-scrolling');
+                    return;
+                }
+
+                console.log('[AutoScroll] Content changed and user at bottom, scrolling...');
+
+                // Use requestAnimationFrame to ensure DOM is fully updated
+                requestAnimationFrame(() => {
+                    this.scrollToBottom();
+                });
+            });
+
+            // Observe chat messages container
+            this.scrollObserver.observe(this.chatMessages, {
+                childList: true,       // Watch for added/removed nodes
+                subtree: true,         // Watch all descendants
+                characterData: true    // Watch for text changes (streaming)
+            });
+
+            console.log('[AutoScroll] MutationObserver initialized successfully');
+        }
+
         scrollToBottom(smooth = false) {
-            // Simple, reliable scroll for all scenarios
-            if (this.userIsScrolling) return; // Don't interrupt user scrolling
+            // Mark that we're auto-scrolling (so scroll listener ignores it)
+            this.isAutoScrolling = true;
 
             const sentinel = document.getElementById('sw-scroll-sentinel');
 
@@ -3979,11 +4407,16 @@ ${poweredByHTML}
                     this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
                 }
             }
+
+            // Reset flag after scroll completes (100ms handles both instant and smooth)
+            setTimeout(() => {
+                this.isAutoScrolling = false;
+            }, 100);
         }
 
         scrollToBottomThrottled() {
-            // Throttled version for streaming updates
-            if (this.userIsScrolling) return;
+            // Throttled version for streaming updates - only if user at bottom
+            if (!this.isNearBottom()) return; // Respect user position
 
             const now = Date.now();
             if (now - this.lastScrollTime < this.scrollThrottleDelay) {
@@ -3994,12 +4427,30 @@ ${poweredByHTML}
             this.scrollToBottom(false);
         }
         
-        // Check if user is at bottom of chat (within 100px)
+        // Check if user is at bottom of chat (industry standard: strict threshold)
         isNearBottom() {
-            const threshold = 100;
-            const position = this.chatMessages.scrollTop + this.chatMessages.clientHeight;
-            const height = this.chatMessages.scrollHeight;
-            return position >= height - threshold;
+            if (!this.chatMessages) {
+                console.log('[AutoScroll] chatMessages not initialized, defaulting to true');
+                return true;
+            }
+
+            const threshold = 30; // 30px threshold - balance between UX and precision
+            const scrollTop = this.chatMessages.scrollTop;
+            const scrollHeight = this.chatMessages.scrollHeight;
+            const clientHeight = this.chatMessages.clientHeight;
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+            const isAtBottom = distanceFromBottom <= threshold;
+
+            console.log('[AutoScroll] Position check:', {
+                scrollTop,
+                scrollHeight,
+                clientHeight,
+                distanceFromBottom,
+                threshold,
+                isAtBottom
+            });
+
+            return isAtBottom;
         }
 
         // Auto-resize textarea as user types
@@ -4038,6 +4489,48 @@ ${poweredByHTML}
     }
     
     async function init() {
+        // MASTER KILL SWITCH - Check if widget is enabled
+        if (CONFIG.enabled === false) {
+            console.log('⚠️ Chatbot Widget is disabled (CONFIG.enabled = false)');
+
+            // Option 1: Show widget in disabled state with tooltip
+            if (CONFIG.disabledMessage?.enabled) {
+                const showDisabledWidget = () => {
+                    // Inject styles and HTML
+                    injectStyles();
+                    injectHTML();
+
+                    // Mark widget container as disabled
+                    const container = document.getElementById('semmelweis-chat-widget');
+                    if (container) {
+                        container.classList.add('sw-widget-disabled');
+                    }
+
+                    // Add tooltip data attributes to bubble and bar
+                    const bubble = document.getElementById('sw-chat-widget-bubble');
+                    const bar = document.querySelector('.sw-bar-container');
+
+                    [bubble, bar].forEach(element => {
+                        if (element) {
+                            element.setAttribute('data-disabled-title', CONFIG.disabledMessage.title);
+                            element.setAttribute('data-disabled-text', CONFIG.disabledMessage.text);
+                            element.setAttribute('data-disabled-contact', CONFIG.disabledMessage.contact);
+                        }
+                    });
+
+                    console.log('ℹ️ Widget shown in disabled state');
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showDisabledWidget);
+                } else {
+                    showDisabledWidget();
+                }
+            }
+            // Option 2: Completely hidden - do nothing
+            return;
+        }
+
         const initialize = async () => {
             injectStyles();
             injectHTML();

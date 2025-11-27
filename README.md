@@ -1,264 +1,249 @@
-# Semmelweis University Translational Medicine Chatbot Widget
+# Fylio AI Chat Widget
 
-A production-ready, SSE-streaming chat widget for Semmelweis University's Translational Medicine Centre. Provides real-time AI-powered answers about programs, admissions, tuition, and more.
+A production-ready AI chat widget that delivers instant, intelligent responses to your website visitors. Built for modern websites that demand exceptional user experience.
 
-## ✨ Features
+---
 
-- **Real-time Streaming**: Server-Sent Events (SSE) for instant, token-by-token responses
-- **Zero Dependencies**: Pure vanilla JavaScript - no frameworks required
-- **Mobile Responsive**: Optimized UX for desktop, tablet, and mobile devices
-- **Easy Integration**: Single `<script>` tag deployment
-- **Customizable**: Override API endpoints and quick questions
-- **Performance Optimized**: Minimal bundle size (~20KB), lazy loading, efficient DOM updates
-- **Accessible**: WCAG 2.1 compliant with proper ARIA labels
+## Features
 
-## 🚀 Quick Start
+### Core Capabilities
+- **Real-time AI Responses** - Instant, streaming answers that appear as they're generated
+- **Zero Dependencies** - Pure JavaScript with no external libraries required
+- **Mobile-First Design** - Flawless experience on desktop, tablet, and mobile devices
+- **One-Line Integration** - Deploy with a single script tag
+- **Conversation Persistence** - Chats resume seamlessly across page navigations
+- **Fully Customizable** - Brand colors, content, and behavior
+
+### Advanced Features
+- **Rich Content Support** - Markdown formatting, lists, links, and code blocks
+- **Quick Questions** - Pre-configured conversation starters
+- **Session Management** - Smart conversation handling with configurable persistence
+- **Responsive Layout** - Automatic adaptation from 270px to 4K displays
+- **Floating Chat Bar** - Optional bottom-bar interface for quick access
+- **Accessibility** - WCAG 2.1 compliant with full keyboard navigation
+
+### Performance
+- **Lightweight** - Minimal impact on page load time
+- **CDN Delivery** - Global distribution for instant availability
+- **Smart Caching** - Optimized for repeat visitors
+- **Smooth Animations** - Hardware-accelerated transitions
+
+---
+
+## Quick Start
 
 ### Basic Integration
 
 Add this single line before your closing `</body>` tag:
+
 ```html
-<!-- Semmelweis Chatbot Widget -->
-<script src="https://your-project.pages.dev/chat-widget.js" defer></script>
+<script src="https://your-domain.pages.dev/chat-widget.js" defer></script>
 ```
 
-That's it! The widget will automatically initialize and appear on your website.
+The widget initializes automatically and appears in the bottom-right corner of your page.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-### Custom N8N Endpoint
+### Minimal Setup
 
-By default, the widget uses a placeholder endpoint. To connect to your N8N webhook:
 ```html
 <script>
   window.ChatbotConfig = {
-    apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat'
+    apiEndpoint: 'https://your-api-endpoint.com/chat'
   };
 </script>
-<script src="https://your-project.pages.dev/chat-widget.js" defer></script>
+<script src="https://your-domain.pages.dev/chat-widget.js" defer></script>
 ```
 
-### Custom Quick Questions
+### Full Customization
 
-Override the default quick questions:
 ```html
 <script>
   window.ChatbotConfig = {
-    apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',
+    // API Configuration
+    apiEndpoint: 'https://your-api-endpoint.com/chat',
+
+    // Branding
+    branding: {
+      botName: 'Your Assistant',
+      botAvatar: 'https://your-domain.com/avatar.png',  // Image URL or emoji
+      widgetIcon: '<svg>...</svg>',  // Custom SVG icon (optional)
+      colors: {
+        primary: '#6366f1'  // Your brand color
+      }
+    },
+
+    // Content Customization
+    content: {
+      barPlaceholder: 'Ask me anything...',
+      panelPlaceholder: 'Type your message...',
+      quickQuestions: [
+        { text: "How does this work?", emoji: "🤔" },
+        { text: "What can you help me with?", emoji: "💡" },
+        { text: "Tell me more", emoji: "📚" }
+      ],
+      quickQuestionsHeader: 'Popular Questions',
+      quickQuestionsHeaderEmoji: '✨'  // Emoji or SVG
+    },
+
+    // UI Visibility Controls
+    ui: {
+      showFloatingBar: true,   // Show/hide bottom chat bar
+      showPoweredBy: true      // Show/hide attribution
+    },
+
+    // Rich Content Features
+    enableRichContent: true,   // Enable advanced formatting
+    enableMarkdown: true,      // Enable markdown in responses
+    enableCards: false,        // Enable card-based responses
+
+    // Conversation Persistence
+    persistence: {
+      enabled: true,                  // Save conversations
+      conversationTTL: 'MEDIUM'       // 'SHORT' (24h), 'MEDIUM' (3d), 'LONG' (7d)
+      // Or use custom milliseconds: conversationTTL: 5 * 24 * 60 * 60 * 1000
+    }
+  };
+</script>
+<script src="https://your-domain.pages.dev/chat-widget.js" defer></script>
+```
+
+### Backward Compatible Configuration
+
+The widget also supports legacy flat configuration:
+
+```html
+<script>
+  window.ChatbotConfig = {
+    apiEndpoint: 'https://your-api-endpoint.com/chat',
     quickQuestions: [
-      { text: "What are the admission requirements?", emoji: "📋" },
-      { text: "Tell me about scholarships", emoji: "💰" },
-      { text: "When does the program start?", emoji: "📅" }
-    ]
+      { text: "Question 1", emoji: "🎓" },
+      { text: "Question 2", emoji: "📝" }
+    ],
+    enableRichContent: true,
+    enableMarkdown: true
   };
 </script>
-<script src="https://your-project.pages.dev/chat-widget.js" defer></script>
-```
-
-### Full Configuration Options
-```javascript
-window.ChatbotConfig = {
-  // Required: Your N8N webhook endpoint
-  apiEndpoint: 'https://your-n8n.yourdomain.com/webhook/chat',
-  
-  // Quick question buttons shown on first load
-  quickQuestions: [
-    { text: "Question 1?", emoji: "🎓" },
-    { text: "Question 2?", emoji: "📝" },
-    { text: "Question 3?", emoji: "💰" }
-  ],
-  
-  // Fallback message if API fails
-  fallbackResponse: "Sorry, I'm having trouble right now. Contact us at tmk@semmelweis.hu",
-  
-  // Retry configuration
-  retries: 2,                   // Number of retry attempts
-  timeoutMs: 20000,             // Request timeout in milliseconds
-  streamBatchIntervalMs: 100    // Streaming update interval
-};
 ```
 
 ---
 
-## 🏗️ Architecture
+## API Requirements
 
-### Tech Stack
+Your backend endpoint must:
 
-- **Frontend**: Vanilla JavaScript (ES6+), CSS3
-- **Streaming**: Server-Sent Events (SSE) with ReadableStream API
-- **Backend**: N8N Workflow (hosted on Render VPS)
-- **Database**: Supabase (vector search, RAG)
-- **Hosting**: Cloudflare Pages CDN
-
-### Request Flow
-```
-User → Widget (CDN) → N8N Webhook (SSE Stream) → Supabase (Vector DB) → AI Agent → Stream Response
-```
-
-### SSE Streaming Protocol
-
-The widget expects N8N to return an SSE stream with the following format:
-```
-data: {"type": "item", "content": "Hello"}
-data: {"type": "item", "content": " world"}
-data: {"type": "item", "content": "!"}
-```
-
-Or final output format:
-```json
-{
-  "type": "item",
-  "content": "{\"output\": \"Complete response text here\"}"
-}
-```
-
----
-
-## 📦 Deployment
-
-### Cloudflare Pages Setup
-
-1. **Fork/Clone** this repository
-2. **Connect to Cloudflare Pages**:
-   - Go to Cloudflare Dashboard → Pages
-   - Create new project → Connect to Git
-   - Select your repository
-3. **Build Settings**:
-   - Build command: (none - static files only)
-   - Build output directory: `/`
-   - Root directory: `/`
-4. **Deploy**
-5. **Custom Domain** (optional):
-   - Add your domain in Cloudflare Pages settings
-   - Update integration code with new URL
-
-### GitHub Deployment
-
-1. Push these files to your repository:
-```
-   /
-   ├── chat-widget.js
-   ├── index.html
-   └── README.md
-```
-
-2. Enable GitHub Pages (optional) or use Cloudflare Pages (recommended)
-
----
-
-## 🔧 N8N Configuration Requirements
-
-Your N8N workflow must:
-
-1. **Accept POST requests** with this payload structure:
-```json
+1. **Accept POST requests** with JSON payload:
+   ```json
    {
-     "message": "User question",
+     "message": "User's question",
      "timestamp": "2025-01-15T10:30:00.000Z",
-     "session_id": "uuid-here",
-     "request_id": "uuid-timestamp"
+     "session_id": "unique-session-id",
+     "request_id": "unique-request-id"
    }
-```
+   ```
 
-2. **Return SSE stream** with `Content-Type: text/event-stream`
+2. **Return streaming responses** in real-time
 
-3. **Stream response** in chunks:
-```
-   data: {"type": "item", "content": "chunk"}
-```
+3. **Handle CORS** with appropriate headers for your domain
 
-4. **Handle CORS** - Add these headers:
-```
-   Access-Control-Allow-Origin: *
-   Access-Control-Allow-Methods: POST, OPTIONS
-   Access-Control-Allow-Headers: Content-Type, X-Request-Id
-```
+Contact Fylio for detailed API specifications and integration support.
 
 ---
 
-## 🎨 UI Components
+## Responsive Design
 
-### Chat Elements
+The widget automatically adapts to any screen size:
 
-- **Floating Input Bar**: Compact input at bottom center (expands on focus)
-- **Chat Bubble**: Persistent button (bottom-right) to open full panel
-- **Chat Panel**: Full-featured chat interface with:
-  - Message history
-  - Typing indicators
-  - Quick question buttons
-  - New chat button
-  - Mobile-responsive layout
+- **Desktop (≥640px)** - Side panel with 400px width
+- **Mobile (<640px)** - Full-screen immersive experience
+- **Ultra-small (≤270px)** - Optimized scaling for all elements
 
-### Styling
-
-The widget uses scoped CSS classes prefixed with `sw-` to avoid conflicts with host website styles.
+All interactions are touch-optimized with minimum 32px tap targets.
 
 ---
 
-## 📊 Performance
+## Browser Support
 
-- **Bundle Size**: ~20KB (minified)
-- **Load Time**: <100ms (via CDN)
-- **Memory**: <5MB runtime
-- **Streaming Latency**: <200ms first token
-
----
-
-## 🔒 Security
-
-- **CORS-enabled**: Safe cross-origin requests
-- **Session-based**: Unique UUID per chat session
-- **No PII storage**: Client-side only stores session ID
-- **XSS Protection**: All user input is sanitized
+- Chrome/Edge (last 2 versions)
+- Firefox (last 2 versions)
+- Safari (last 2 versions)
+- iOS Safari (iOS 14+)
+- Chrome Mobile (Android 10+)
 
 ---
 
-## 🐛 Troubleshooting
+## Security & Privacy
 
-### Widget not appearing?
-
-1. Check browser console for errors
-2. Verify `chat-widget.js` is loading (Network tab)
-3. Ensure no CSP blocking scripts
-
-### No response from chatbot?
-
-1. Check N8N endpoint URL in `ChatbotConfig`
-2. Verify N8N workflow is active and responding
-3. Check Network tab for failed requests
-4. Review N8N logs for errors
-
-### Streaming not working?
-
-1. Confirm N8N returns `Content-Type: text/event-stream`
-2. Check CORS headers are set correctly
-3. Verify SSE format matches expected structure
+- **Client-side only** - No data stored on Fylio servers
+- **Session-based** - Unique identifiers per conversation
+- **Sanitized content** - Protection against XSS attacks
+- **HTTPS required** - Secure communication only
 
 ---
 
-## 📝 Version History
+## Deployment
 
-- **v1.0.0** (2025-01-15): Initial production release
-  - SSE streaming support
-  - Mobile responsive design
-  - Configurable endpoints
-  - Quick questions feature
+### Cloudflare Pages (Recommended)
 
----
+1. Deploy files to Cloudflare Pages
+2. Configure custom domain (optional)
+3. Update integration code with your CDN URL
 
-## 📧 Support
+### GitHub Pages
 
-For technical support or questions:
-
-- **Email**: tmk@semmelweis.hu
-- **Website**: [Semmelweis University Translational Medicine](https://semmelweis.hu/translational-medicine)
+1. Upload `chat-widget.js` to your repository
+2. Enable GitHub Pages
+3. Reference the file in your integration code
 
 ---
 
-## 📄 License
+## Troubleshooting
 
-© 2025 Semmelweis University. All rights reserved.
+**Widget not appearing?**
+- Check browser console for errors
+- Verify the script URL is correct and accessible
+- Ensure no Content Security Policy blocking scripts
 
-This widget is proprietary software for Semmelweis University's use.
+**No responses from chatbot?**
+- Confirm `apiEndpoint` is correctly configured
+- Verify your API endpoint is active and responding
+- Check browser Network tab for failed requests
+
+**Styling conflicts?**
+- The widget uses scoped `sw-` prefixed classes
+- Verify your CSS isn't using `!important` on global selectors
+
+---
+
+## Support
+
+**Commercial Support**
+- Email: support@fylio.com
+- Documentation: https://docs.fylio.com
+- Integration Help: Available to enterprise customers
+
+**Enterprise Features**
+- White-label options
+- Custom integrations
+- Priority support
+- SLA guarantees
+
+---
+
+## License
+
+© 2025 Fylio. All rights reserved.
+
+This is proprietary software. Unauthorized copying, modification, or distribution is prohibited.
+
+For licensing inquiries, contact: sales@fylio.com
+
+---
+
+## About Fylio
+
+Fylio builds intelligent conversation experiences for modern websites. Our AI chat widgets combine cutting-edge technology with beautiful design to help businesses engage their visitors.
+
+Learn more at [fylio.com](https://fylio.com)
