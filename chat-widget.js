@@ -2462,8 +2462,7 @@ ${poweredByHTML}
             this.scrollThrottleDelay = 30; // Match chunk processing delay (30ms)
             this.shouldAutoScroll = true; // User preference for auto-scroll (industry standard pattern)
             this.scrollObserver = null; // MutationObserver for content changes (industry standard)
-            this.manualScrollTimeout = null; // Debounce manual scroll detection
-            this.userIsActivelyScrolling = false; // Track if user is CURRENTLY scrolling (immediate detection)
+            this.lastUserScrollTime = 0; // Track when user last manually scrolled (for failsafe)
 
             // Animation guard for robust state management
             this.animationLock = {
@@ -3178,7 +3177,6 @@ ${poweredByHTML}
 
             // User explicitly clicked a question - always scroll to bottom (industry standard)
             this.shouldAutoScroll = true;
-            this.userIsActivelyScrolling = false;
             console.log('[AutoScroll] User clicked quick question, enabling auto-scroll');
 
             this.sendMessage(question);
@@ -3218,7 +3216,6 @@ ${poweredByHTML}
 
             // User explicitly sent a message - always scroll to bottom (industry standard)
             this.shouldAutoScroll = true;
-            this.userIsActivelyScrolling = false;
             console.log('[AutoScroll] User sent message from bar, enabling auto-scroll');
 
             this.sendMessage(message);
@@ -3240,7 +3237,6 @@ ${poweredByHTML}
 
             // User explicitly sent a message - always scroll to bottom (industry standard)
             this.shouldAutoScroll = true;
-            this.userIsActivelyScrolling = false;
             console.log('[AutoScroll] User sent message, enabling auto-scroll');
 
             try {
@@ -3419,6 +3415,36 @@ ${poweredByHTML}
             // Set streaming state for auto-scroll behavior
             console.log('[SCROLL-DEBUG] ========== STREAMING STARTED ==========');
             this.isActivelyStreaming = true;
+
+            // FAILSAFE: Ensure autoscroll is enabled at start of streaming
+            this.shouldAutoScroll = true;
+
+            // FAILSAFE: Periodic check to ensure autoscroll stays active during streaming
+            // This catches edge cases where autoscroll might get disabled incorrectly
+            const autoscrollFailsafe = setInterval(() => {
+                // Safety: clear interval if streaming ended (catches error cases)
+                if (!this.isActivelyStreaming) {
+                    clearInterval(autoscrollFailsafe);
+                    return;
+                }
+
+                // PREVENT FIGHTING: Don't interfere with ongoing scroll operations
+                if (this.isAutoScrolling) {
+                    return;
+                }
+
+                // CRITICAL: Don't interfere if user manually scrolled recently (within 1 second)
+                // This prevents fighting the user and allows seamless manual control
+                const timeSinceUserScroll = Date.now() - this.lastUserScrollTime;
+                if (timeSinceUserScroll < 1000) {
+                    return; // User is actively scrolling, don't interfere
+                }
+
+                // If we should be autoscrolling and we're at bottom, force a scroll
+                if (this.shouldAutoScroll && this.isNearBottom()) {
+                    this.scrollToBottom();
+                }
+            }, 500); // Check every 500ms
 
             let buffer = '';
             let firstChunkReceived = false;
@@ -3669,6 +3695,7 @@ ${poweredByHTML}
                 // Reset streaming state
                 console.log('[SCROLL-DEBUG] ========== STREAMING ENDED ==========');
                 this.isActivelyStreaming = false;
+                clearInterval(autoscrollFailsafe); // Stop failsafe checks
 
                 // FINALIZATION: Simple cleanup and save
                 console.log('[Chatbot] Finalizing stream');
@@ -4187,7 +4214,13 @@ ${poweredByHTML}
             this.messageHistory.push({ role: sender, content, time: new Date() });
             this.saveConversation();  // Persist conversation to localStorage
 
-            // Auto-scroll handled by MutationObserver - no manual scroll needed
+            // Scroll to show the new message if autoscroll is enabled
+            if (this.shouldAutoScroll) {
+                // Force layout recalculation (ensures DOM is ready)
+                void this.chatMessages.offsetHeight;
+                // Scroll immediately - no RAF needed (DOM already updated)
+                this.scrollToBottom();
+            }
         }
         
         addBotMessage(messageId, content) {
@@ -4298,7 +4331,9 @@ ${poweredByHTML}
         }
 
         // ========================================
-        // INDUSTRY STANDARD AUTO-SCROLL SYSTEM
+        // BULLETPROOF AUTO-SCROLL SYSTEM
+        // Detects user INTENT before scroll happens (wheel/touch/keyboard)
+        // Prevents fighting user even during rapid content updates
         // ========================================
 
         setupScrollListener() {
@@ -4307,34 +4342,97 @@ ${poweredByHTML}
                 return;
             }
 
-            console.log('[AutoScroll] Setting up scroll event listener');
+            console.log('[AutoScroll] Setting up scroll intent detection');
 
+            // MOUSE WHEEL - Fires BEFORE scroll (prevents fighting)
+            this.chatMessages.addEventListener('wheel', (e) => {
+                // Scrolling up - disable immediately
+                if (e.deltaY < 0) {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Wheel up - disabled');
+                }
+                // Scrolling down - check if at bottom after scroll
+                else if (e.deltaY > 0 && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Wheel to bottom - enabled');
+                        }
+                    }, 50);
+                }
+            }, { passive: true });
+
+            // TOUCH - Fires BEFORE scroll (mobile support)
+            let touchStartY = 0;
+            this.chatMessages.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            this.chatMessages.addEventListener('touchmove', (e) => {
+                const touchY = e.touches[0].clientY;
+                const deltaY = touchY - touchStartY;
+
+                // Swiping down = scrolling up (disable autoscroll)
+                if (deltaY > 5) {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Touch up - disabled');
+                }
+                // Swiping up = scrolling down (check if at bottom)
+                else if (deltaY < -5 && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Touch to bottom - enabled');
+                        }
+                    }, 50);
+                }
+
+                touchStartY = touchY;
+            }, { passive: true });
+
+            // KEYBOARD - Fires BEFORE scroll
+            this.chatMessages.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'Home') {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Keyboard up - disabled');
+                }
+                else if ((e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'End') && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Keyboard to bottom - enabled');
+                        }
+                    }, 50);
+                }
+            }, { passive: true });
+
+            // FALLBACK: Scroll position tracking (for edge cases)
+            let lastScrollTop = 0;
             this.chatMessages.addEventListener('scroll', () => {
-                // Ignore programmatic scrolls
                 if (this.isAutoScrolling) {
-                    console.log('[AutoScroll] Ignoring programmatic scroll');
+                    lastScrollTop = this.chatMessages.scrollTop;
                     return;
                 }
 
-                // IMMEDIATELY mark that user is actively scrolling (critical for responsiveness)
-                this.userIsActivelyScrolling = true;
-                console.log('[AutoScroll] User is actively scrolling - pausing auto-scroll');
+                const currentScrollTop = this.chatMessages.scrollTop;
+                if (currentScrollTop !== lastScrollTop) {
+                    this.lastUserScrollTime = Date.now();
 
-                // Debounce - wait 150ms after user stops scrolling
-                clearTimeout(this.manualScrollTimeout);
-                this.manualScrollTimeout = setTimeout(() => {
-                    // User stopped scrolling, clear the active flag
-                    this.userIsActivelyScrolling = false;
+                    if (currentScrollTop < lastScrollTop && this.shouldAutoScroll) {
+                        this.shouldAutoScroll = false;
+                        console.log('[AutoScroll] Scroll up fallback - disabled');
+                    }
+                    else if (currentScrollTop > lastScrollTop && !this.shouldAutoScroll && this.isNearBottom()) {
+                        this.shouldAutoScroll = true;
+                        console.log('[AutoScroll] Scroll to bottom fallback - enabled');
+                    }
 
-                    // Check if user is at bottom NOW
-                    const isAtBottom = this.isNearBottom();
-
-                    // Update auto-scroll preference based on their final position
-                    this.shouldAutoScroll = isAtBottom;
-
-                    console.log('[AutoScroll] User stopped scrolling, shouldAutoScroll:', this.shouldAutoScroll);
-                }, 150);
-            });
+                    lastScrollTop = currentScrollTop;
+                }
+            }, { passive: true });
         }
 
         setupScrollObserver() {
@@ -4346,31 +4444,33 @@ ${poweredByHTML}
             // Disconnect existing observer if any
             if (this.scrollObserver) {
                 this.scrollObserver.disconnect();
-                console.log('[AutoScroll] Disconnected existing observer');
             }
 
             console.log('[AutoScroll] Setting up MutationObserver');
 
-            // Create observer that watches for content changes
+            // Watch for content changes - industry standard approach
             this.scrollObserver = new MutationObserver(() => {
-                // CRITICAL: Don't interrupt if user is actively scrolling (immediate respect)
-                if (this.userIsActivelyScrolling) {
-                    console.log('[AutoScroll] User is actively scrolling, not interrupting');
+                // PREVENT DOUBLE-SCROLL: Skip only if we scrolled in the last 16ms (one frame)
+                // This prevents redundant scrolls while still allowing subsequent content (typing indicator) to scroll
+                const timeSinceScroll = Date.now() - this.lastScrollTime;
+                if (this.isAutoScrolling && timeSinceScroll < 16) {
                     return;
                 }
 
-                // Only scroll if user wants auto-scroll (based on their final position)
+                // Only scroll if user wants autoscroll (they're at bottom)
                 if (!this.shouldAutoScroll) {
-                    console.log('[AutoScroll] Content changed but user scrolled up, not auto-scrolling');
                     return;
                 }
 
-                console.log('[AutoScroll] Content changed and user at bottom, scrolling...');
+                // Double-check position (might have changed since last check)
+                if (!this.isNearBottom()) {
+                    console.log('[AutoScroll] Position changed, disabling autoscroll');
+                    this.shouldAutoScroll = false;
+                    return;
+                }
 
-                // Use requestAnimationFrame to ensure DOM is fully updated
-                requestAnimationFrame(() => {
-                    this.scrollToBottom();
-                });
+                // User is at bottom, scroll to show new content
+                this.scrollToBottom();
             });
 
             // Observe chat messages container
@@ -4380,20 +4480,23 @@ ${poweredByHTML}
                 characterData: true    // Watch for text changes (streaming)
             });
 
-            console.log('[AutoScroll] MutationObserver initialized successfully');
+            console.log('[AutoScroll] MutationObserver active');
         }
 
         scrollToBottom(smooth = false) {
-            // Mark that we're auto-scrolling (so scroll listener ignores it)
-            this.isAutoScrolling = true;
+            if (!this.chatMessages) return;
 
+            // Mark that we're programmatically scrolling
+            this.isAutoScrolling = true;
+            this.lastScrollTime = Date.now(); // Track when we scrolled
+
+            // Get scroll target
             const sentinel = document.getElementById('sw-scroll-sentinel');
 
-            if (sentinel) {
-                // Force layout recalculation for mobile devices (iOS Safari fix)
-                if (this.chatMessages) {
-                    this.chatMessages.offsetHeight;
-                }
+            // DEFENSIVE: Verify sentinel is actually in chatMessages
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                // Force layout recalculation (iOS Safari fix)
+                void this.chatMessages.offsetHeight;
 
                 sentinel.scrollIntoView({
                     behavior: smooth ? 'smooth' : 'instant',
@@ -4401,56 +4504,48 @@ ${poweredByHTML}
                     inline: 'nearest'
                 });
             } else {
-                // Fallback if sentinel not found
-                if (this.chatMessages) {
-                    this.chatMessages.offsetHeight;
-                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                }
+                // Fallback to scrollTop (sentinel missing or misplaced)
+                void this.chatMessages.offsetHeight;
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
             }
 
-            // Reset flag after scroll completes (100ms handles both instant and smooth)
-            setTimeout(() => {
-                this.isAutoScrolling = false;
-            }, 100);
+            // Reset flag using double-RAF pattern for maximum reliability
+            // This ensures scroll event has completed on all browsers/devices
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    this.isAutoScrolling = false;
+                });
+            });
         }
 
         scrollToBottomThrottled() {
-            // Throttled version for streaming updates - only if user at bottom
-            if (!this.isNearBottom()) return; // Respect user position
+            // Throttled version - check position first
+            if (!this.shouldAutoScroll || !this.isNearBottom()) {
+                return;
+            }
 
             const now = Date.now();
             if (now - this.lastScrollTime < this.scrollThrottleDelay) {
-                return; // Skip this scroll, too soon after last one
+                return;
             }
 
             this.lastScrollTime = now;
             this.scrollToBottom(false);
         }
-        
-        // Check if user is at bottom of chat (industry standard: strict threshold)
+
+        // Check if user is at bottom of chat
         isNearBottom() {
             if (!this.chatMessages) {
-                console.log('[AutoScroll] chatMessages not initialized, defaulting to true');
-                return true;
+                return true; // Default to true if not initialized
             }
 
-            const threshold = 30; // 30px threshold - balance between UX and precision
+            const threshold = 100; // Very generous threshold (100px) for maximum reliability
             const scrollTop = this.chatMessages.scrollTop;
             const scrollHeight = this.chatMessages.scrollHeight;
             const clientHeight = this.chatMessages.clientHeight;
             const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-            const isAtBottom = distanceFromBottom <= threshold;
 
-            console.log('[AutoScroll] Position check:', {
-                scrollTop,
-                scrollHeight,
-                clientHeight,
-                distanceFromBottom,
-                threshold,
-                isAtBottom
-            });
-
-            return isAtBottom;
+            return distanceFromBottom <= threshold;
         }
 
         // Auto-resize textarea as user types
