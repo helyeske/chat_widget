@@ -1308,6 +1308,7 @@
                 min-width: 0; /* Override base min-width */
                 height: 100vh;
                 height: 100dvh; /* ADD: Dynamic viewport height */
+                max-height: none; /* Override base max-height for true full-screen */
                 border-radius: 0;
                 padding: 0;
                 gap: 0;
