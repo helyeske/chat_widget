@@ -41,18 +41,40 @@
         return item && typeof item === 'object' && !Array.isArray(item);
     }
 
+    // ========================================
+    // CONVERSATION PERSISTENCE TTL PRESETS
+    // ========================================
+    const TTL_PRESETS = {
+        SHORT: 24 * 60 * 60 * 1000,       // 24 hours - for transactional sites
+        MEDIUM: 3 * 24 * 60 * 60 * 1000,   // 3 days - recommended default
+        LONG: 7 * 24 * 60 * 60 * 1000      // 7 days - for B2B/complex products
+    };
+
     const DEFAULT_CONFIG = {
+        // Master Kill Switch - Emergency disable for critical issues
+        enabled: true,  // Set to false to completely disable the widget
+
+        // Disabled State Message (optional) - Shows when enabled = false
+        disabledMessage: {
+            enabled: true,  // Show message instead of hiding completely
+            title: "Chat temporarily unavailable",
+            text: "We're currently performing maintenance. Please contact us directly:",
+            contact: "support@example.com"  // Email, phone, or alternative contact method
+        },
+
         // API Configuration
         apiEndpoint: 'https://ctm-chat.fylio.workers.dev',
         retries: 2,
         timeoutMs: 20000,
-        streamBatchIntervalMs: 200,
-        fallbackResponse: "I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu",
+        streamBatchIntervalMs: 1000,
+        streamChunkDelayMs: 80,  // Delay between displaying chunks from queue (legacy, kept for compatibility)
+        streamCharDelayMs: 10,   // Milliseconds per character for typewriter effect (30ms = ~33 chars/sec, smooth and readable)
+        fallbackResponse: "Opps! I'm sorry, I'm having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.",
 
         // Branding & Customization
         branding: {
             botName: 'Zsanett AI',
-            botAvatar: '🤖',  // Used in panel header and bot messages - can be emoji or image URL
+            botAvatar: 'chatbot_icon.jpg',  // Used in panel header and bot messages - can be emoji or image URL
             widgetIcon: '<svg viewBox="0 0 30 30" fill="none"><g clip-path="url(#clip0_114_14)"><path d="M8 14H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 18H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 5H7.5C6.50544 5 5.55161 5.39509 4.84835 6.09835C4.14509 6.80161 3.75 7.75544 3.75 8.75V18.75C3.75 19.7446 4.14509 20.6984 4.84835 21.4017C5.55161 22.1049 6.50544 22.5 7.5 22.5H10V26.25L16.25 22.5H22.5C23.4946 22.5 24.4484 22.1049 25.1517 21.4017C25.8549 20.6984 26.25 19.7446 26.25 18.75V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.8462 11.5391L21.9846 13.0615L20.4609 16.923L18.9385 13.0615L15.077 11.5391L18.9385 10.0154L20.4609 6.15381L21.9846 10.0154L25.8462 11.5391Z" fill="currentColor"/><path d="M26.8337 11.5846C26.8337 11.8226 26.6867 12.0396 26.464 12.1265C26.464 12.1265 23.5345 12.5931 22.3994 13.801C21.2643 15.0089 20.9587 17.6318 20.9587 17.6318C20.9155 17.7405 20.8407 17.8336 20.7439 17.8993C20.6472 17.9649 20.533 18 20.4161 18C20.2992 18 20.185 17.9649 20.0883 17.8993C19.9915 17.8336 19.9167 17.7405 19.8735 17.6318C19.8735 17.6318 19.4886 14.8555 18.3166 13.6834C17.1445 12.5114 14.3682 12.1265 14.3682 12.1265C14.2595 12.0833 14.1664 12.0085 14.1007 11.9117C14.0351 11.815 14 11.7008 14 11.5839C14 11.467 14.0351 11.3528 14.1007 11.2561C14.1664 11.1593 14.2595 11.0845 14.3682 11.0413C14.3682 11.0413 17.1445 10.6564 18.3166 9.48438C19.4886 8.31235 19.8735 5.53596 19.8735 5.53596C19.9167 5.42733 19.9915 5.33417 20.0883 5.26853C20.185 5.20289 20.2992 5.1678 20.4161 5.1678C20.533 5.1678 20.6472 5.20289 20.7439 5.26853C20.8407 5.33417 20.9155 5.42733 20.9587 5.53596C20.9587 5.53596 21.3436 8.31235 22.5156 9.48438C23.6877 10.6564 26.464 11.0413 26.464 11.0413C26.5727 11.0848 26.666 11.1597 26.7318 11.2565C26.7977 11.3533 26.8331 11.4675 26.8337 11.5846ZM24.6592 11.5846L21.8534 10.4771C21.779 10.4475 21.7115 10.4031 21.6549 10.3465C21.5983 10.2899 21.5539 10.2224 21.5243 10.148L20.4182 7.34075L19.3093 10.148C19.2799 10.2223 19.2356 10.2897 19.1793 10.3463C19.123 10.4028 19.0557 10.4473 18.9816 10.4771L16.173 11.5832L18.9816 12.6921C19.0556 12.7217 19.1228 12.766 19.1791 12.8223C19.2354 12.8786 19.2797 12.9458 19.3093 13.0198L20.4168 15.8284L21.5243 13.0198C21.5541 12.9457 21.5986 12.8784 21.6551 12.8221C21.7117 12.7658 21.7791 12.7215 21.8534 12.6921L24.6592 11.5846ZM28 6.33405C28 6.33405 26.8941 6.59145 26.4094 7.07612C25.9248 7.5608 25.6674 8.66669 25.6674 8.66669C25.6674 8.66669 25.4089 7.56076 24.9239 7.07612C24.439 6.59166 23.3333 6.33405 23.3333 6.33405C23.3333 6.33405 24.4392 6.07666 24.9239 5.59197C25.4089 5.10693 25.666 4 25.666 4C25.666 4 25.9235 5.10571 26.408 5.59057C26.893 6.07594 28 6.33405 28 6.33405Z" fill="currentColor"/></g><defs><clipPath id="clip0_114_14"><rect width="30" height="30" fill="white"/></clipPath></defs></svg>',  // Widget bubble icon only
             colors: {
                 primary: '#8B5CF6'  // Your brand color - applied to header, buttons, accents, user messages
@@ -75,7 +97,8 @@
         // UI Visibility Controls
         ui: {
             showFloatingBar: true,  // Show/hide the floating chat input bar at the bottom
-            showPoweredBy: true     // Show/hide "Powered by" attribution
+            showPoweredBy: true,    // Show/hide "Powered by" attribution
+            showBetaBadge: true     // Show/hide Beta label next to "Powered by"
         },
 
         // Powered By Attribution (internal - not user configurable)
@@ -87,11 +110,23 @@
             logoUrl: './favicon.svg'
         },
 
+        // Beta Badge Configuration
+        betaBadge: {
+            tooltipText: "Our AI assistant can make mistakes, if in doubt, contact tmk@semmelweis.hu."
+        },
+
+        // Conversation Persistence Settings
+        persistence: {
+            enabled: true,                          // Enable/disable conversation persistence
+            conversationTTL: TTL_PRESETS.MEDIUM,    // Time-to-live: 3 days (default)
+            storageKey: 'chat_conversation'         // localStorage key
+        },
+
         // Rich Content Feature Flags (OFF by default for safety)
-        enableRichContent: false,     // Master switch for all rich content features
-        enableMarkdown: false,         // Enable markdown rendering (requires marked.js)
-        enableCards: false,            // Enable structured cards and carousels
-        fallbackToPlainText: true,     // Fallback to plain text if libraries fail to load
+        enableRichContent: true,      // Master switch for all rich content features
+        enableMarkdown: true,         // Enable HTML content rendering (server sends pre-formatted HTML)
+        enableCards: true,            // Enable structured cards and carousels
+        fallbackToPlainText: true,     // Fallback to plain text if DOMPurify fails to load
 
         // DEPRECATED: Legacy support for old config format
         quickQuestions: undefined      // Will be mapped from content.quickQuestions
@@ -116,67 +151,47 @@
         CONFIG = DEFAULT_CONFIG;
     }
 
+    // Convert TTL preset strings to numeric values
+    if (CONFIG.persistence?.conversationTTL && typeof CONFIG.persistence.conversationTTL === 'string') {
+        const presetKey = CONFIG.persistence.conversationTTL.toUpperCase();
+        if (TTL_PRESETS[presetKey]) {
+            CONFIG.persistence.conversationTTL = TTL_PRESETS[presetKey];
+        } else {
+            console.warn(`[ChatWidget] Invalid TTL preset: ${CONFIG.persistence.conversationTTL}. Using default (MEDIUM).`);
+            CONFIG.persistence.conversationTTL = TTL_PRESETS.MEDIUM;
+        }
+    }
+
     // Set quickQuestions at root level for backward compatibility with existing code
     CONFIG.quickQuestions = CONFIG.content?.quickQuestions || DEFAULT_CONFIG.content.quickQuestions;
 
     // ========================================
-    // LIBRARY LOADING (for Rich Content)
+    // LIBRARY LOADING (HTML Sanitization)
     // ========================================
     let LIBRARIES_LOADED = {
-        marked: false,
         DOMPurify: false
     };
 
     function loadLibraries() {
         return new Promise((resolve) => {
-            // If rich content disabled, skip loading
-            if (!CONFIG.enableRichContent) {
-                console.log('[Chatbot] Rich content disabled, skipping library load');
-                resolve(false);
-                return;
-            }
+            // Always load DOMPurify for HTML sanitization (server sends HTML)
+            console.log('[Chatbot] Loading DOMPurify for HTML sanitization');
 
-            let loadedCount = 0;
-            const totalLibraries = 2;
-
-            function checkComplete() {
-                loadedCount++;
-                if (loadedCount === totalLibraries) {
-                    const allLoaded = LIBRARIES_LOADED.marked && LIBRARIES_LOADED.DOMPurify;
-                    console.log('[Chatbot] Libraries loaded:', allLoaded ? 'success' : 'failed');
-                    resolve(allLoaded);
-                }
-            }
-
-            // Load marked.js (markdown parser)
-            const markedScript = document.createElement('script');
-            markedScript.src = 'https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js';
-            markedScript.onload = () => {
-                LIBRARIES_LOADED.marked = typeof window.marked !== 'undefined';
-                if (LIBRARIES_LOADED.marked) {
-                    console.log('[Chatbot] marked.js loaded successfully');
-                }
-                checkComplete();
-            };
-            markedScript.onerror = () => {
-                console.warn('[Chatbot] Failed to load marked.js - markdown rendering will be disabled');
-                checkComplete();
-            };
-            document.head.appendChild(markedScript);
-
-            // Load DOMPurify (HTML sanitization)
             const purifyScript = document.createElement('script');
             purifyScript.src = 'https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js';
             purifyScript.onload = () => {
                 LIBRARIES_LOADED.DOMPurify = typeof window.DOMPurify !== 'undefined';
                 if (LIBRARIES_LOADED.DOMPurify) {
                     console.log('[Chatbot] DOMPurify loaded successfully');
+                    resolve(true);
+                } else {
+                    console.error('[Chatbot] DOMPurify failed to initialize');
+                    resolve(false);
                 }
-                checkComplete();
             };
             purifyScript.onerror = () => {
-                console.warn('[Chatbot] Failed to load DOMPurify - HTML sanitization will be disabled');
-                checkComplete();
+                console.error('[Chatbot] Failed to load DOMPurify - HTML sanitization disabled');
+                resolve(false);
             };
             document.head.appendChild(purifyScript);
         });
@@ -222,6 +237,33 @@
             /* Button Colors (Fixed) */
             --sw-button-disabled: #d1d5db;
             --sw-button-disabled-text: #a1a1aa;
+
+            /* Animation Timing (Premium consistency) */
+            --sw-timing-instant: 0.15s;
+            --sw-timing-fast: 0.2s;
+            --sw-timing-normal: 0.35s;
+            --sw-timing-slow: 0.5s;
+
+            /* Easing Functions (Premium feel) */
+            --sw-ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+            --sw-ease-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
+            --sw-ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+            /* Shadow System (4-tier hierarchy) - Multi-layer for premium feel */
+            --shadow-sm:
+                0 1px 2px rgba(0, 0, 0, 0.06),
+                0 1px 3px rgba(0, 0, 0, 0.10);
+            --shadow-md:
+                0 2px 4px rgba(0, 0, 0, 0.08),
+                0 4px 12px rgba(0, 0, 0, 0.12);
+            --shadow-lg:
+                0 4px 8px rgba(0, 0, 0, 0.10),
+                0 8px 24px rgba(0, 0, 0, 0.16),
+                0 1px 2px rgba(0, 0, 0, 0.08);
+            --shadow-xl:
+                0 8px 16px rgba(0, 0, 0, 0.12),
+                0 16px 48px rgba(0, 0, 0, 0.20),
+                0 2px 4px rgba(0, 0, 0, 0.10);
         }
         `;
     }
@@ -247,23 +289,23 @@
             transform: translateX(-50%) scale(1);
             background: white;
             border-radius: 40px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-            padding: 6px 12px;
+            box-shadow: var(--shadow-xl);
+            padding: 7px 8px 7px 0px;
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 320px;
-            transition: 
-                transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.25s ease;
+            width: 330px;
+            transition:
+                transform var(--sw-timing-normal) var(--sw-ease-bounce),
+                width var(--sw-timing-normal) var(--sw-ease-premium),
+                box-shadow var(--sw-timing-fast) ease;
             pointer-events: all;
             will-change: transform, width;
         }
 
         .sw-chat-input-bar:hover:not(.expanding) {
             transform: translateX(-50%) scale(1.02);
-            box-shadow: 0 6px 32px rgba(0, 0, 0, 0.18);
+            box-shadow: var(--shadow-xl);
         }
 
         .sw-chat-input-bar:not(:hover) {
@@ -278,18 +320,18 @@
         .sw-chat-input-bar.expanded:hover:not(.expanding) {
             transform: translateX(-50%) scale(1.02);
         }
-        
+
         .sw-chat-input-bar.expanded:not(:hover) {
             transform: translateX(-50%) scale(1);
         }
 
         .sw-chat-input-bar.expanding {
-            transition: 
-                transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-                width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.3s ease;
+            transition:
+                transform var(--sw-timing-slow) var(--sw-ease-bounce),
+                width var(--sw-timing-slow) var(--sw-ease-premium),
+                box-shadow var(--sw-timing-normal) ease;
         }
-        
+
         .sw-chat-input-bar.expanding:hover {
             transform: translateX(-50%) scale(1.01);
         }
@@ -298,9 +340,9 @@
             opacity: 0;
             transform: translateX(-50%) translateY(120%) scale(0.95);
             pointer-events: none;
-            transition: 
-                opacity 0.3s ease,
-                transform 0.4s cubic-bezier(0.4, 0, 0.6, 1);
+            transition:
+                opacity var(--sw-timing-normal) ease,
+                transform var(--sw-timing-normal) var(--sw-ease-premium);
         }
 
         .sw-chat-input-bar.hidden:hover {
@@ -310,15 +352,15 @@
         .sw-chat-input-bar.dismissed {
             display: none;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 639px) {
             .sw-chat-input-bar {
                 display: none !important;
             }
          }
 
         .sw-chat-avatar-mini {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: transparent;
             display: flex;
@@ -326,14 +368,18 @@
             justify-content: center;
             flex-shrink: 0;
             color: var(--sw-primary);
-            font-size: 18px;
+            font-size: 20px;
             cursor: default;
-            transition: all 0.2s;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-chat-avatar-mini:hover {
+            transform: scale(1.08);
         }
 
         .sw-chat-avatar-mini svg {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
         }
 
         .sw-bar-chat-input {
@@ -341,7 +387,7 @@
             border: none;
             outline: none;
             background: transparent;
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.2;
             color: var(--sw-text-primary);
             padding: 4px 4px;
@@ -352,8 +398,8 @@
         }
 
         .sw-bar-icon-btn {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: #9DA3AF; /* gray-400 - default/disabled state */
             border: none;
@@ -362,7 +408,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.25s;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
             flex-shrink: 0;
             overflow: hidden;
         }
@@ -378,12 +424,12 @@
         .sw-bar-icon-btn.send-btn.active {
             background: var(--sw-primary); /* Primary color when active */
             color: white;
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bar-icon-btn.send-btn.active:hover {
-            transform: scale(1.08);
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            transform: scale(1.03);
+            box-shadow: var(--shadow-md);
         }
 
         .sw-bar-icon-btn.close-btn {
@@ -397,8 +443,8 @@
         }
 
         .sw-bar-icon-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
         }
 
         /* Persistent Chat Widget Bubble */
@@ -406,24 +452,27 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            width: 56px;  /* Standard size: 64px → 56px */
-            height: 56px;
+            width: 64px;  /* Increased from 56px for premium presence */
+            height: 64px;
             border-radius: 50%;
             background: var(--sw-primary);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+            box-shadow:
+                0 6px 16px rgba(0, 0, 0, 0.30),
+                0 14px 36px rgba(0, 0, 0, 0.26),
+                0 0 3px rgba(0, 0, 0, 0.20);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             color: white;
-            font-size: 28px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 32px;
+            transition: all var(--sw-timing-normal) var(--sw-ease-premium);
             pointer-events: all;
         }
 
         .sw-chat-widget-bubble:hover {
-            transform: scale(1.08);
-            box-shadow: 0 6px 28px rgba(139, 92, 246, 0.5);
+            transform: scale(1.04);
+            box-shadow: var(--shadow-xl);
         }
 
         .sw-chat-widget-bubble:active {
@@ -437,32 +486,8 @@
         }
 
         .sw-chat-widget-bubble svg {
-            width: 36px;  /* Icon size: 40px → 36px (64.3% of bubble) */
-            height: 36px;
-        }
-
-        /* Notification Badge */
-        .sw-bubble-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            border: 2px solid white;
-            animation: sw-badgePulse 2s infinite;
-        }
-
-        @keyframes sw-badgePulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+            width: 40px;  /* Icon size scaled with 64px bubble (62.5% ratio) */
+            height: 40px;
         }
 
         /* LAYER 1: Grey Outer Container Card */
@@ -479,13 +504,17 @@
             border-radius: 32px;
             box-shadow:
                 0 0 0 1px rgba(0, 0, 0, 0.05),
-                0 20px 60px rgba(0, 0, 0, 0.2);
+                var(--shadow-md);
             display: flex;
             flex-direction: column;
             opacity: 0;
             transform: scale(0.92) translateY(30px);
             pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+            transition:
+                transform var(--sw-timing-normal) var(--sw-ease-bounce),
+                opacity var(--sw-timing-normal) ease,
+                box-shadow var(--sw-timing-normal) ease;
+            will-change: transform, opacity;
             z-index: 10000;
             padding: 8px;
             gap: 8px;
@@ -495,6 +524,10 @@
             opacity: 1;
             transform: scale(1) translateY(0);
             pointer-events: all;
+            box-shadow:
+                0 0 0 1px rgba(0, 0, 0, 0.08),
+                0 20px 60px rgba(0, 0, 0, 0.25),
+                var(--shadow-xl);
         }
 
         /* LAYER 2: White Main Chat Card */
@@ -502,9 +535,7 @@
             flex: 1;
             background: var(--sw-card-bg);
             border-radius: 24px;
-            box-shadow:
-                0 2px 8px rgba(0, 0, 0, 0.04),
-                0 1px 2px rgba(0, 0, 0, 0.03);
+            box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -523,7 +554,7 @@
 
             /* Sizing: Compact pill */
             width: auto;
-            max-width: calc(80% - 60px);
+            max-width: calc(100% - 80px);  /* Increased from 80% - 60px for more text space */
 
             /* Pill shape: Fully rounded */
             border-radius: 999px;
@@ -536,9 +567,7 @@
             color: white;
 
             /* Shadow: Elevated floating effect */
-            box-shadow:
-                0 8px 24px rgba(0, 0, 0, 0.12),
-                0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-lg);
 
             /* Layout */
             display: flex;
@@ -564,8 +593,9 @@
             align-items: center;
             justify-content: center;
             font-size: 18px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
             flex-shrink: 0;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
         }
 
         .sw-chat-header-title {
@@ -594,14 +624,14 @@
             backdrop-filter: none;
             border: none;
 
-            color: var(--sw-text-secondary); /* Harmonizes with UI color system */
+            color: #000000; /* Black icon */
             cursor: pointer;
 
             display: flex;
             align-items: center;
             justify-content: center;
 
-            transition: all 0.25s ease;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
             flex-shrink: 0;
         }
 
@@ -610,36 +640,100 @@
             background: rgba(0, 0, 0, 0.06);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 0, 0, 0.08);
-            color: var(--sw-text-primary); /* Dash becomes more prominent */
+            color: #000000; /* Keep black on hover */
             transform: scale(1.02);
         }
 
         .sw-header-minimize-btn svg {
             width: 18px;
             height: 18px;
-            transition: all 0.25s ease;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
-        /* Header Background Zone with Gradient Fade */
+        /* New Chat Button - Secondary Action */
+        .sw-header-new-chat-btn {
+            position: absolute;
+            top: 24px; /* Aligned with pill vertical center */
+            left: 16px; /* Positioned on left for symmetric layout */
+            z-index: 4;
+
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+
+            /* Default: No background, subtle icon */
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+
+            color: #000000; /* Black icon */
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
+            flex-shrink: 0;
+        }
+
+        .sw-header-new-chat-btn:hover {
+            /* Hover: Circle fades in smoothly */
+            background: rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #000000; /* Keep black on hover */
+            transform: scale(1.02);
+        }
+
+        .sw-header-new-chat-btn svg {
+            width: 18px;
+            height: 18px;
+            transition: all var(--sw-timing-fast) var(--sw-ease-premium);
+        }
+
+        /* Header Button Tooltips - Appear BELOW buttons to avoid cut-off */
+        .sw-header-new-chat-btn::after,
+        .sw-header-minimize-btn::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 8px);  /* Below the button */
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--sw-primary);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .sw-header-new-chat-btn:hover::after,
+        .sw-header-minimize-btn:hover::after {
+            opacity: 1;
+            transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.8s;
+        }
+
+        /* Header Background - Frosted Glass (iMessage style) */
         .sw-header-background {
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 100px;
+            height: 90px;
             z-index: 2;
-
-            background: linear-gradient(
-                180deg,
-                #ffffff 0%,
-                #ffffff 50%,
-                rgba(255, 255, 255, 0.9) 60%,
-                rgba(255, 255, 255, 0.7) 75%,
-                rgba(255, 255, 255, 0.3) 90%,
-                rgba(255, 255, 255, 0) 100%
-            );
-
             pointer-events: none;
+
+            /* Frosted glass effect: strong blur + white tint */
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            background: rgba(255, 255, 255, 0.85);
         }
 
         /* Chat Messages Area - Inside White Card */
@@ -647,7 +741,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 110px 20px 20px 20px;
+            padding: 100px 20px 20px 12px;  /* Reduced left padding to bring avatar closer to edge, more content space */
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -704,10 +798,12 @@
             gap: 16px;
             padding: 8px 0;
             animation: sw-fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.12s ease-in;
         }
 
         .sw-quick-questions-section.hidden {
-            display: none;
+            opacity: 0;
+            pointer-events: none;
         }
 
         @keyframes sw-fadeSlideIn {
@@ -761,18 +857,34 @@
             font-size: 14px;
             color: var(--sw-text-primary);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background var(--sw-timing-normal) var(--sw-ease-premium),
+                        border-color var(--sw-timing-normal) var(--sw-ease-premium),
+                        box-shadow var(--sw-timing-normal) var(--sw-ease-premium),
+                        transform var(--sw-timing-normal) var(--sw-ease-premium);
             font-family: inherit;
             text-align: left;
             width: auto;
             max-width: 90%;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+            animation: sw-questionStagger 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Stagger animation keyframe - fade-in + slide for premium feel */
+        @keyframes sw-questionStagger {
+            0% {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .sw-quick-question-btn::before {
@@ -784,7 +896,7 @@
             height: 100%;
             background: rgba(17, 24, 39, 0.04); /* Neutral grey - works with any primary color */
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity var(--sw-timing-normal) ease;
             z-index: 0;
         }
 
@@ -801,9 +913,9 @@
         }
 
         .sw-quick-question-btn:hover {
-            transform: translateX(-4px) translateY(-2px);
+            transform: translateX(-4px) translateY(-2px) scale(1.02);
             border-color: var(--sw-primary-light);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Neutral shadow - works with any primary color */
+            box-shadow: var(--shadow-md);
         }
 
         .sw-quick-question-btn:hover::before {
@@ -812,15 +924,15 @@
 
         .sw-quick-question-btn:active {
             transform: translateX(-2px) translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* Neutral shadow - works with any primary color */
+            box-shadow: var(--shadow-sm);
         }
 
         /* Messages */
         .sw-message {
             display: flex;
             flex-direction: column;
-            max-width: 85%;
-            animation: sw-messageSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 92%;
+            animation: sw-messageSlideIn var(--sw-timing-fast) var(--sw-ease-premium);
         }
 
         @keyframes sw-messageSlideIn {
@@ -845,21 +957,40 @@
         .sw-message-wrapper {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
+            gap: 8px;
         }
 
         .sw-message-avatar {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: #f3f4f6;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--sw-primary);
-            font-size: 18px;
+            font-size: 14px;
             flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-message-avatar:hover {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sw-message-avatar img,
+        .sw-chat-logo img,
+        .sw-morph-icon img,
+        .sw-bubble-bot-icon-inner img,
+        .sw-chat-avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            transition: opacity var(--sw-timing-fast) var(--sw-ease-smooth);
         }
 
         .sw-message-content {
@@ -872,13 +1003,13 @@
             word-break: break-word;
             overflow-wrap: break-word;
             max-width: 100%;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bot-message .sw-message-content {
             background: var(--sw-message-bot-bg);
             color: var(--sw-text-primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
         }
 
         .sw-bot-message .sw-message-content ul {
@@ -889,12 +1020,12 @@
 
         .sw-bot-message .sw-message-content li {
             margin: 6px 0;
-            color: #4b5563;
             padding-left: 20px;
             position: relative;
         }
 
-        .sw-bot-message .sw-message-content li::before {
+        /* Bullet styling - only for non-markdown lists (markdown has its own styling below) */
+        .sw-bot-message .sw-message-content:not(.markdown) li::before {
             content: '•';
             position: absolute;
             left: 0;
@@ -905,6 +1036,14 @@
             background: var(--sw-message-user-bg);
             color: white;
             box-shadow: 0 2px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        /* Streaming Buffer - Incomplete text during streaming */
+        .sw-streaming-buffer {
+            color: var(--sw-text-primary);
+            opacity: 0.7;
+            /* Smooth transition when buffer becomes formatted */
+            transition: opacity 0.2s ease;
         }
 
         /* Typing Indicator */
@@ -1040,16 +1179,21 @@
             height: 16px;
         }
 
-        /* Powered by Fylio Attribution */
+        /* Powered by Fylio Attribution - Outer container */
         .sw-powered-by {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
+            justify-content: center;  /* Centers the inner content wrapper */
             padding: 0;
             font-size: 11px;
             color: #9ca3af;
             flex-shrink: 0;
+        }
+
+        /* Inner content wrapper - centered with badge */
+        .sw-powered-by-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .sw-powered-by-text {
@@ -1086,8 +1230,54 @@
             letter-spacing: -0.01em;
         }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
+        /* Beta Badge - Centered with powered by content */
+        .sw-beta-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--sw-primary);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            cursor: help;
+            flex-shrink: 0;
+        }
+
+        /* Custom Tooltip - Primary Color with Multi-line */
+        .sw-beta-badge::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--sw-primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 0;
+            text-transform: none;
+            white-space: normal;
+            max-width: 200px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+
+        .sw-beta-badge:hover::after {
+            opacity: 1;
+            transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.8s;
+        }
+
+        /* Mobile Responsive (< 640px: Full-screen | ≥ 640px: Side panel) */
+        @media (max-width: 639px) {
             /* Fix body scroll on mobile */
             body.sw-chat-open {
                 overflow: hidden;
@@ -1114,8 +1304,11 @@
                 left: 0;
                 bottom: 0;
                 width: 100%;
+                max-width: none; /* Override base max-width for true full-screen */
+                min-width: 0; /* Override base min-width */
                 height: 100vh;
                 height: 100dvh; /* ADD: Dynamic viewport height */
+                max-height: none; /* Override base max-height for true full-screen */
                 border-radius: 0;
                 padding: 0;
                 gap: 0;
@@ -1150,13 +1343,40 @@
                 height: 16px;
             }
 
+            .sw-header-new-chat-btn {
+                top: 18px; /* Aligned with mobile pill vertical center */
+                left: 12px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .sw-header-new-chat-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Hide all tooltips on mobile - no hover state on touch devices */
+            .sw-header-new-chat-btn::after,
+            .sw-header-new-chat-btn::before,
+            .sw-header-minimize-btn::after,
+            .sw-header-minimize-btn::before,
+            .sw-beta-badge::after,
+            .sw-beta-badge::before {
+                display: none !important;
+            }
+
             .sw-header-background {
-                height: 80px;
+                height: 75px;  /* Extended for better spacing below pill */
+
+                /* Mobile frosted glass: slightly stronger for better readability */
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+                background: rgba(255, 255, 255, 0.88);
             }
 
             /* MODIFIED: Fix messages overflow */
             .sw-chat-messages {
-                padding: 90px 16px 16px 16px;
+                padding: 88px 16px 16px 10px;  /* Reduced left padding for more content space on mobile */
                 overflow-x: hidden; /* ADD: Prevent horizontal scroll */
                 -webkit-overflow-scrolling: touch; /* ADD: Smooth iOS scrolling */
             }
@@ -1170,13 +1390,13 @@
             .sw-chat-widget-bubble {
                 bottom: 16px;
                 right: 16px;
-                width: 52px;  /* Mobile: slightly smaller */
-                height: 52px;
+                width: 60px;  /* Mobile: scaled proportionally with desktop */
+                height: 60px;
             }
 
             .sw-chat-widget-bubble svg {
-                width: 32px;  /* Mobile icon: maintains proportion */
-                height: 32px;
+                width: 38px;  /* Mobile icon: scaled with bubble */
+                height: 38px;
             }
 
             /* NEW: Fix input font size to prevent iOS zoom */
@@ -1210,6 +1430,132 @@
             }
         }
 
+        /* Ultra-small screens (≤270px): Scale everything down to prevent overflow */
+        @media (max-width: 270px) {
+            /* Header scaling */
+            .sw-chat-header {
+                padding: 6px 8px 6px 6px;
+                max-width: calc(100% - 60px);
+            }
+
+            .sw-chat-header-title {
+                font-size: 13px;
+            }
+
+            .sw-chat-logo {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+
+            .sw-header-minimize-btn,
+            .sw-header-new-chat-btn {
+                width: 32px;
+                height: 32px;
+                top: 16px;
+            }
+
+            .sw-header-minimize-btn {
+                right: 8px;
+            }
+
+            .sw-header-new-chat-btn {
+                left: 8px;
+            }
+
+            .sw-header-minimize-btn svg,
+            .sw-header-new-chat-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Message area scaling */
+            .sw-chat-messages {
+                padding: 80px 12px 12px 8px;
+            }
+
+            .sw-message-content {
+                padding: 12px 14px;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .sw-message-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+
+            /* Quick questions scaling */
+            .sw-quick-question-btn {
+                font-size: 13px;
+                padding: 10px 14px;
+                gap: 6px;
+            }
+
+            .sw-quick-question-emoji {
+                font-size: 16px;
+                width: 20px;
+                height: 20px;
+            }
+
+            .sw-quick-questions-header {
+                font-size: 11px;
+                padding: 10px 0 8px;
+                gap: 4px;
+            }
+
+            .sw-quick-questions-header-emoji {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Input area scaling */
+            .sw-chat-input-area {
+                padding: 6px;
+                margin: 0 4px 4px 4px;
+            }
+
+            .sw-panel-chat-input {
+                font-size: 14px !important;
+                padding: 10px 12px;
+            }
+
+            .sw-panel-send-btn {
+                width: 32px;
+                height: 32px;
+            }
+
+            .sw-panel-send-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* Powered by scaling */
+            .sw-powered-by {
+                font-size: 9px;
+                gap: 3px;
+            }
+
+            .sw-powered-by-icon {
+                width: 10px;
+                height: 10px;
+            }
+
+            /* Widget bubble scaling */
+            .sw-chat-widget-bubble {
+                width: 48px;
+                height: 48px;
+                bottom: 12px;
+                right: 12px;
+            }
+
+            .sw-chat-widget-bubble svg {
+                width: 28px;
+                height: 28px;
+            }
+        }
+
         /* Accessibility: Focus Indicators */
         *:focus-visible {
             outline: 3px solid var(--sw-primary);
@@ -1231,6 +1577,210 @@
         .sw-chat-widget-bubble:focus-visible {
             outline: 4px solid var(--sw-primary);
             outline-offset: 4px;
+        }
+
+        /* ========================================
+           PREMIUM OPENING ANIMATION
+           ======================================== */
+
+        /* Morphing Element - Transforms from bubble to header pill */
+        .sw-morph-element {
+            position: fixed;
+            z-index: 999999;
+            pointer-events: none;
+            will-change: width, height, border-radius, left, top;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--sw-primary);
+            color: white;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* Initial circle state: no gap, text takes no space */
+        .sw-morph-element.circle-state {
+            gap: 0;
+            padding: 10px;
+        }
+
+        /* Pill state: has gap for spacing */
+        .sw-morph-element.pill-state {
+            gap: 10px;
+            padding: 10px 16px 10px 10px;
+        }
+
+        .sw-morph-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--sw-timing-fast) var(--sw-ease-smooth);
+        }
+
+        .sw-morph-text {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            opacity: 0;
+            max-width: 0;
+            overflow: hidden;
+            transition:
+                opacity var(--sw-timing-normal) ease,
+                max-width var(--sw-timing-normal) ease;
+        }
+
+        .sw-morph-element.show-text .sw-morph-text {
+            opacity: 1;
+            max-width: 300px;  /* Increased from 200px to accommodate longer names */
+        }
+
+        /* Panel reveal animation */
+        @keyframes sw-panelFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .sw-chat-panel.animating-in {
+            animation: sw-panelFadeIn 0.6s ease forwards;
+        }
+
+        /* Hide elements during animation */
+        .sw-chat-header.hidden-during-animation {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .sw-chat-widget-bubble.hidden-during-animation {
+            opacity: 0 !important;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* ========================================
+           CLICK ANIMATION: Bounce & Icon Swap
+           ======================================== */
+
+        /* Stage 1: Click press - Button depression */
+        @keyframes sw-bubbleClickPress {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(0.92);
+            }
+        }
+
+        /* Stage 2: Elastic bounce with overshoot */
+        @keyframes sw-bubbleBounceUp {
+            0% {
+                transform: scale(0.92);
+            }
+            60% {
+                transform: scale(1.08);
+            }
+            100% {
+                transform: scale(1.0);
+            }
+        }
+
+        /* Widget icon fades out during bounce */
+        @keyframes sw-widgetIconFadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+        }
+
+        /* Bot icon fades in during bounce */
+        @keyframes sw-botIconFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Classes to trigger animations */
+        .sw-chat-widget-bubble.clicking {
+            animation: sw-bubbleClickPress 250ms cubic-bezier(0.34, 0.1, 0.5, 1) forwards;
+        }
+
+        .sw-chat-widget-bubble.bouncing {
+            animation: sw-bubbleBounceUp 400ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+        }
+
+        /* Icon container inside bubble during animation */
+        .sw-bubble-widget-icon {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: sw-widgetIconFadeOut 200ms ease forwards;
+            animation-play-state: paused;
+        }
+
+        .sw-bubble-widget-icon.animating {
+            animation-play-state: running;
+        }
+
+        .sw-bubble-bot-icon-click {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: sw-botIconFadeIn 200ms ease forwards;
+            animation-play-state: paused;
+        }
+
+        .sw-bubble-bot-icon-click.animating {
+            animation-play-state: running;
+        }
+
+        /* Inner icon with background circle - matches .sw-morph-icon */
+        .sw-bubble-bot-icon-inner {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         /* Accessibility: Reduced Motion Support */
@@ -1272,6 +1822,15 @@
 
         .sw-message-content.markdown p {
             margin: 8px 0;
+        }
+
+        /* Remove extra spacing at start and end of message bubble */
+        .sw-message-content.markdown > *:first-child {
+            margin-top: 0;
+        }
+
+        .sw-message-content.markdown > *:last-child {
+            margin-bottom: 0;
         }
 
         .sw-message-content.markdown a {
@@ -1316,6 +1875,46 @@
             margin: 10px 0;
             color: var(--sw-text-secondary);
             font-style: italic;
+        }
+
+        /* Markdown Lists - Native Browser Rendering for Streaming Compatibility */
+        .sw-message-content.markdown ul {
+            margin: 10px 0;
+            padding-left: 28px;  /* Space for native bullet */
+            list-style-type: disc;  /* Native bullet */
+            list-style-position: outside;  /* Bullet outside content area */
+        }
+
+        /* List items - rely on native browser rendering */
+        .sw-bot-message .sw-message-content.markdown ul li {
+            margin: 6px 0;
+            padding-left: 8px;  /* Slight indent for content */
+            color: var(--sw-text-primary);  /* Explicit black color */
+        }
+
+        /* Style the native bullet marker */
+        .sw-message-content.markdown ul li::marker {
+            color: var(--sw-primary);  /* Brand color for bullet */
+            font-size: 0.8em;  /* Slightly smaller bullet */
+        }
+
+        .sw-message-content.markdown ol {
+            margin: 10px 0;
+            padding-left: 24px;
+            list-style: decimal;
+        }
+
+        /* Higher specificity for ordered lists - ensures black text, not grey */
+        .sw-bot-message .sw-message-content.markdown ol li {
+            margin: 6px 0;
+            padding-left: 8px;
+            color: var(--sw-text-primary);  /* Explicit black color */
+        }
+
+        /* Nested lists */
+        .sw-message-content.markdown li ul,
+        .sw-message-content.markdown li ol {
+            margin: 4px 0;
         }
 
         /* Card Container */
@@ -1466,7 +2065,7 @@
         }
 
         /* Mobile Responsive Cards */
-        @media (max-width: 768px) {
+        @media (max-width: 639px) {
             .sw-card-image {
                 height: 140px;
             }
@@ -1474,6 +2073,120 @@
             .sw-card-carousel .sw-card {
                 min-width: 240px;
                 max-width: 240px;
+            }
+        }
+
+        /* ========================================
+           DISABLED WIDGET STATE
+           ======================================== */
+
+        /* Disabled state - grey, inactive appearance */
+        .sw-widget-disabled #sw-chat-widget-bubble {
+            background: rgba(156, 163, 175, 0.8) !important;
+            cursor: not-allowed !important;
+            pointer-events: all !important;
+        }
+
+        .sw-widget-disabled .sw-chat-input-bar {
+            background: rgba(156, 163, 175, 0.8) !important;
+            cursor: not-allowed !important;
+            pointer-events: all !important;
+        }
+
+        /* Remove all animations and transitions in disabled state */
+        .sw-widget-disabled #sw-chat-widget-bubble *,
+        .sw-widget-disabled .sw-chat-input-bar * {
+            animation: none !important;
+        }
+
+        .sw-widget-disabled .sw-chat-widget-bubble,
+        .sw-widget-disabled .sw-chat-input-bar {
+            animation: none !important;
+        }
+
+        /* Remove hover effects */
+        .sw-widget-disabled #sw-chat-widget-bubble:hover,
+        .sw-widget-disabled .sw-chat-input-bar:hover {
+            transform: none !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+        }
+
+        /* Disabled tooltip - shows maintenance message with primary color */
+        .sw-widget-disabled #sw-chat-widget-bubble::after {
+            content: attr(data-disabled-text) " " attr(data-disabled-contact);
+            white-space: normal;
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            max-width: 340px;
+            padding: 16px 20px;
+            background: var(--sw-primary) !important;
+            color: white !important;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.6;
+            opacity: 0 !important;
+            pointer-events: none;
+            transform: translateY(0);
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+            z-index: 999999;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            isolation: isolate;
+            will-change: opacity, transform;
+        }
+
+        /* Arrow pointer for disabled tooltip */
+        .sw-widget-disabled #sw-chat-widget-bubble::before {
+            content: '';
+            position: fixed;
+            bottom: 94px;
+            right: calc(24px + 140px - 6px);
+            border: 6px solid transparent;
+            border-top-color: var(--sw-primary) !important;
+            opacity: 0 !important;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+            z-index: 999999;
+            isolation: isolate;
+            will-change: opacity, transform;
+        }
+
+        .sw-widget-disabled #sw-chat-widget-bubble:hover::after,
+        .sw-widget-disabled #sw-chat-widget-bubble:hover::before {
+            opacity: 1 !important;
+            transition-delay: 0.8s;
+        }
+
+        /* Prevent panel from opening */
+        .sw-widget-disabled #sw-chat-panel {
+            display: none !important;
+        }
+
+        /* Hide floating bar when disabled - only show bubble */
+        .sw-widget-disabled .sw-chat-input-bar {
+            display: none !important;
+        }
+
+        /* Mobile responsive disabled tooltip */
+        @media (max-width: 639px) {
+            .sw-widget-disabled #sw-chat-widget-bubble::after {
+                right: 16px;
+                left: 16px;
+                max-width: none;
+                bottom: 90px;
+            }
+
+            .sw-widget-disabled #sw-chat-widget-bubble::before {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: 84px;
+            }
+
+            .sw-widget-disabled #sw-chat-widget-bubble:hover::before {
+                transform: translateX(-50%) translateY(0);
             }
         }
     `;
@@ -1489,14 +2202,33 @@
     function generateHTML() {
         // Check ui.showPoweredBy first, fallback to poweredBy.enabled for backward compatibility
         const showPoweredBy = CONFIG.ui?.showPoweredBy ?? CONFIG.poweredBy.enabled;
-        const poweredByHTML = showPoweredBy ? `
-                    <!-- Powered by Attribution -->
+        const showBetaBadge = CONFIG.ui?.showBetaBadge ?? false;
+
+        // Get tooltip text from config (with default fallback)
+        const tooltipText = CONFIG.betaBadge?.tooltipText ??
+            "Our AI assistant can make mistakes, if in doubt, contact tmk@semmelweis.hu.";
+
+        // Beta badge HTML with customizable tooltip (only if enabled)
+        const betaBadgeHTML = showBetaBadge ?
+            `<span class="sw-beta-badge" data-tooltip="${tooltipText}">Beta</span>`
+            : '';
+
+        // Powered by content (text + link) - only if enabled
+        const poweredByContentHTML = showPoweredBy ? `
+                            <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
+                            <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
+                                <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
+                                <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
+                            </a>` : '';
+
+        // Show container if EITHER powered by OR beta badge is enabled
+        const poweredByHTML = (showPoweredBy || showBetaBadge) ? `
+                    <!-- Powered by Attribution / Beta Badge -->
                     <div class="sw-powered-by">
-                        <span class="sw-powered-by-text">${CONFIG.poweredBy.text}</span>
-                        <a href="${CONFIG.poweredBy.brandUrl}" target="_blank" rel="noopener noreferrer" class="sw-powered-by-link" aria-label="Visit ${CONFIG.poweredBy.brandName} website">
-                            <img src="${CONFIG.poweredBy.logoUrl}" alt="${CONFIG.poweredBy.brandName} logo" class="sw-powered-by-icon" />
-                            <span class="sw-powered-by-brand">${CONFIG.poweredBy.brandName}</span>
-                        </a>
+                        <div class="sw-powered-by-content">
+                            ${betaBadgeHTML}
+                            ${poweredByContentHTML}
+                        </div>
                     </div>` : '';
 
         // Conditionally include floating bar based on ui.showFloatingBar
@@ -1530,7 +2262,6 @@
         <!-- Persistent Chat Widget Bubble -->
         <div id="sw-chat-widget-bubble" class="sw-chat-widget-bubble" role="button" aria-label="Open chat" tabindex="0">
             ${CONFIG.branding.widgetIcon}
-            <span class="sw-bubble-badge" aria-label="New messages available">1</span>
         </div>
 
         <!-- Chat Panel with 3-Layer Hierarchy -->
@@ -1548,8 +2279,16 @@
                     </div>
                 </div>
 
+                <!-- External New Chat Button -->
+                <button id="sw-panel-new-chat-btn" class="sw-header-new-chat-btn" data-tooltip="New chat" aria-label="Start a new conversation">
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <line x1="8" y1="3" x2="8" y2="13"/>
+                        <line x1="3" y1="8" x2="13" y2="8"/>
+                    </svg>
+                </button>
+
                 <!-- External Minimize Button -->
-                <button id="sw-panel-close-btn" class="sw-header-minimize-btn" title="Minimize chat" aria-label="Minimize chat">
+                <button id="sw-panel-close-btn" class="sw-header-minimize-btn" data-tooltip="Minimize" aria-label="Minimize chat">
                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                         <line x1="3" y1="8" x2="13" y2="8"/>
                     </svg>
@@ -1558,6 +2297,8 @@
                 <!-- Messages Area (Inside White Card) -->
                 <div class="sw-chat-messages" id="sw-chat-messages" role="log" aria-live="polite" aria-label="Chat conversation">
                     <!-- Messages added dynamically -->
+                    <!-- Scroll sentinel - always at bottom for reliable scrolling -->
+                    <div id="sw-scroll-sentinel" style="height: 1px; margin: 0; padding: 0;"></div>
                 </div>
 
                 <!-- LAYER 3b: Elevated Input Card -->
@@ -1643,6 +2384,46 @@ ${poweredByHTML}
     }
     
     // ========================================
+    // ANIMATION TIMING CONFIGURATION
+    // ========================================
+    const ANIMATION_TIMING = {
+        // Click sequence (Stage 0)
+        clickPress: 250,
+        bounce: 400,
+        iconSwapDelay: 100,
+
+        // Pill expansion (Stage 1)
+        circleHold: 200,
+        transitionEnable: 20,
+        pillExpansion: 500,
+
+        // Upward motion (Stage 2)
+        unifiedRise: 700,
+        headerFadeStart: 200,  /* Early fade creates illusion of pill sliding up with panel */
+
+        // Cleanup
+        cleanupDelay: 100,
+
+        // Fast animation
+        fastPanelSlide: 400,
+        fastCleanupDelay: 50,
+
+        // Derived values (auto-calculated)
+        get clickSequenceTotal() {
+            return this.clickPress + this.bounce;
+        },
+
+        get pillExpansionTotal() {
+            return this.transitionEnable + this.pillExpansion;
+        },
+
+        get fullAnimationTotal() {
+            return this.clickSequenceTotal + this.circleHold +
+                   this.pillExpansionTotal + this.unifiedRise;
+        }
+    };
+
+    // ========================================
     // CHAT WIDGET CLASS
     // ========================================
     class ChatWidget {
@@ -1657,6 +2438,42 @@ ${poweredByHTML}
             this.streamingBuffer = { content: '', messageId: null };
             this.userIsScrolling = false;
             this.scrollTimeout = null;
+            this.scrollPending = false; // Prevent overlapping scroll requests
+            this.isActivelyStreaming = false; // Track active streaming for auto-scroll behavior
+            this.isAutoScrolling = false; // Track when we're programmatically scrolling (not user)
+            this.isAnimating = false; // Legacy flag, kept for compatibility
+            this.lastScrollTime = 0; // Throttle scroll updates
+            this.scrollThrottleDelay = 30; // Match chunk processing delay (30ms)
+            this.shouldAutoScroll = true; // User preference for auto-scroll (industry standard pattern)
+            this.scrollObserver = null; // MutationObserver for content changes (industry standard)
+            this.lastUserScrollTime = 0; // Track when user last manually scrolled (for failsafe)
+
+            // Animation guard for robust state management
+            this.animationLock = {
+                isLocked: false,
+                currentAnimation: null,
+
+                acquire: function(animationName) {
+                    if (this.isLocked) {
+                        console.warn(`[ChatWidget] Animation blocked: ${animationName} (current: ${this.currentAnimation})`);
+                        return false;
+                    }
+                    this.isLocked = true;
+                    this.currentAnimation = animationName;
+                    return true;
+                },
+
+                release: function() {
+                    this.isLocked = false;
+                    this.currentAnimation = null;
+                },
+
+                forceRelease: function() {
+                    console.warn('[ChatWidget] Force releasing animation lock');
+                    this.release();
+                }
+            };
+
             this.init();
         }
         
@@ -1666,6 +2483,167 @@ ${poweredByHTML}
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+        }
+
+        // ========================================
+        // CONVERSATION PERSISTENCE METHODS
+        // ========================================
+
+        saveConversation() {
+            if (!CONFIG.persistence?.enabled) return;
+
+            try {
+                const data = {
+                    messageHistory: this.messageHistory,
+                    sessionId: this.sessionId,
+                    lastActivity: Date.now(),
+                    version: 1  // For future compatibility
+                };
+                localStorage.setItem(CONFIG.persistence.storageKey, JSON.stringify(data));
+            } catch (error) {
+                console.warn('[ChatWidget] Failed to save conversation:', error);
+            }
+        }
+
+        loadConversation() {
+            if (!CONFIG.persistence?.enabled) return false;
+
+            try {
+                const stored = localStorage.getItem(CONFIG.persistence.storageKey);
+                if (!stored) return false;
+
+                const data = JSON.parse(stored);
+
+                // Validate data structure
+                if (!data || !data.messageHistory || !data.sessionId || !data.lastActivity) {
+                    console.warn('[ChatWidget] Invalid stored conversation data');
+                    localStorage.removeItem(CONFIG.persistence.storageKey);
+                    return false;
+                }
+
+                // Check TTL
+                const age = Date.now() - data.lastActivity;
+                if (age > CONFIG.persistence.conversationTTL) {
+                    console.log('[ChatWidget] Conversation expired, starting fresh');
+                    localStorage.removeItem(CONFIG.persistence.storageKey);
+                    return false;
+                }
+
+                // Restore conversation state
+                this.messageHistory = data.messageHistory;
+                this.sessionId = data.sessionId;
+                this.firstMessageSent = data.messageHistory.length > 0;
+
+                console.log(`[ChatWidget] Restored conversation with ${data.messageHistory.length} messages`);
+                return true;
+            } catch (error) {
+                console.warn('[ChatWidget] Failed to load conversation:', error);
+                localStorage.removeItem(CONFIG.persistence.storageKey);
+                return false;
+            }
+        }
+
+        restoreMessagesUI() {
+            // Re-render messages from history
+            this.messageHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    this.addMessageToUI(msg.content, 'user');
+                } else if (msg.role === 'bot') {
+                    this.addMessageToUI(msg.content, 'bot');
+                }
+            });
+        }
+
+        addMessageToUI(content, sender) {
+            // Helper to add message DOM without modifying messageHistory
+            const messageDiv = document.createElement('article');
+            messageDiv.className = `sw-message sw-${sender}-message`;
+            messageDiv.setAttribute('role', 'article');
+            messageDiv.setAttribute('aria-label', `${sender === 'bot' ? 'AI' : 'User'} message`);
+            const messageId = `msg-${Date.now()}-${Math.random()}`;
+            messageDiv.id = messageId;
+
+            let contentDiv;
+
+            if (sender === 'bot') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'sw-message-wrapper';
+
+                const avatar = document.createElement('div');
+                avatar.className = 'sw-message-avatar';
+                avatar.setAttribute('aria-hidden', 'true');
+                this.renderBotAvatar(avatar);
+                wrapper.appendChild(avatar);
+
+                contentDiv = document.createElement('div');
+                contentDiv.className = 'sw-message-content';
+                wrapper.appendChild(contentDiv);
+
+                messageDiv.appendChild(wrapper);
+            } else {
+                contentDiv = document.createElement('div');
+                contentDiv.className = 'sw-message-content';
+                contentDiv.textContent = content;  // User messages are always plain text
+                messageDiv.appendChild(contentDiv);
+            }
+
+            this.chatMessages.appendChild(messageDiv);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
+            // Apply rich content rendering for bot messages (uses unified renderer)
+            if (sender === 'bot') {
+                this.renderContentToDOM(contentDiv, content);
+            }
+        }
+
+        // Calculate and cache pill width for morphing animation
+        calculateAndCachePillWidth() {
+            // Use Canvas API for fast, non-DOM text measurement
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = '600 16px -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif';
+
+            const textWidth = ctx.measureText(CONFIG.branding.botName).width;
+
+            // Calculate total pill width (must match CSS values)
+            const iconWidth = 36; // .sw-morph-icon width
+            const gap = 10; // gap between icon and text
+            const paddingLeft = 10; // pill-state padding-left
+            const paddingRight = 16; // pill-state padding-right
+
+            const pillWidth = iconWidth + gap + textWidth + paddingLeft + paddingRight;
+
+            // Cache in CSS custom property for use in animations
+            document.documentElement.style.setProperty('--sw-cached-pill-width', `${pillWidth}px`);
+
+            // Also cache for JavaScript access
+            this.cachedPillWidth = pillWidth;
+
+            return pillWidth;
+        }
+
+        // Helper function to detect if botAvatar is an image URL
+        isImageUrl(str) {
+            return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(str);
+        }
+
+        // Helper function to render bot avatar (image or emoji)
+        renderBotAvatar(container) {
+            const avatarContent = CONFIG.branding.botAvatar;
+
+            if (this.isImageUrl(avatarContent)) {
+                const img = document.createElement('img');
+                img.src = avatarContent;
+                img.alt = CONFIG.branding.botName;
+                container.appendChild(img);
+            } else {
+                container.textContent = avatarContent;
+            }
         }
 
         // ========================================
@@ -1705,21 +2683,6 @@ ${poweredByHTML}
             return { type: 'text', content: String(data) };
         }
 
-        hasMarkdownSyntax(text) {
-            // Quick heuristic to detect if text contains markdown
-            const markdownPatterns = [
-                /^#+\s/m,          // Headers
-                /\*\*.*\*\*/,      // Bold
-                /\*.*\*/,          // Italic
-                /\[.*\]\(.*\)/,    // Links
-                /`.*`/,            // Code
-                /^[-*+]\s/m,       // Lists
-                /^>\s/m            // Blockquotes
-            ];
-
-            return markdownPatterns.some(pattern => pattern.test(text));
-        }
-
         escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -1729,41 +2692,6 @@ ${poweredByHTML}
                 "'": '&#039;'
             };
             return String(text).replace(/[&<>"']/g, m => map[m]);
-        }
-
-        renderMarkdown(content) {
-            // Feature check
-            if (!CONFIG.enableMarkdown || !LIBRARIES_LOADED.marked || !LIBRARIES_LOADED.DOMPurify) {
-                // Fallback to plain text
-                return this.escapeHtml(content);
-            }
-
-            try {
-                // Configure marked
-                window.marked.setOptions({
-                    breaks: true,        // Convert \n to <br>
-                    gfm: true,          // GitHub Flavored Markdown
-                    headerIds: false,   // Don't add IDs to headers
-                    mangle: false       // Don't escape emails
-                });
-
-                // Render markdown
-                const rawHtml = window.marked.parse(content);
-
-                // Sanitize with DOMPurify
-                const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
-                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li',
-                                  'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote',
-                                  'code', 'pre', 'hr'],
-                    ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
-                    ALLOW_DATA_ATTR: false
-                });
-
-                return cleanHtml;
-            } catch (error) {
-                console.error('[Chatbot] Markdown rendering failed:', error);
-                return this.escapeHtml(content);
-            }
         }
 
         renderCard(cardData) {
@@ -1887,6 +2815,73 @@ ${poweredByHTML}
             }
         }
 
+        // ========================================
+        // UNIFIED CONTENT RENDERER
+        // Single source of truth for all content rendering
+        // ========================================
+        renderContentToDOM(contentDiv, content) {
+            if (!contentDiv) return;
+
+            // Reset classes
+            contentDiv.classList.remove('markdown', 'card-container', 'carousel-container');
+
+            try {
+                // Detect message type
+                const messageData = this.detectMessageType(content);
+
+                switch (messageData.type) {
+                    case 'text':
+                        // Render HTML content (server sends pre-formatted HTML)
+                        if (CONFIG.enableMarkdown) {
+                            // Sanitize and render HTML content
+                            const sanitized = window.DOMPurify.sanitize(messageData.content, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+                            contentDiv.innerHTML = sanitized;
+                            contentDiv.classList.add('markdown');
+                        } else {
+                            // Plain text fallback (safe, uses textContent)
+                            contentDiv.textContent = messageData.content;
+                        }
+                        break;
+
+                    case 'card':
+                        if (CONFIG.enableRichContent && CONFIG.enableCards) {
+                            const cardHtml = this.renderCard(messageData);
+                            contentDiv.innerHTML = cardHtml;
+                            contentDiv.classList.add('card-container');
+                        } else {
+                            // Fallback to plain text
+                            const text = `${messageData.title || ''}\n${messageData.description || ''}`;
+                            contentDiv.textContent = text;
+                        }
+                        break;
+
+                    case 'carousel':
+                        if (CONFIG.enableRichContent && CONFIG.enableCards) {
+                            const carouselHtml = this.renderCarousel(messageData.items);
+                            contentDiv.innerHTML = carouselHtml;
+                            contentDiv.classList.add('carousel-container');
+                        } else {
+                            // Fallback to plain text
+                            contentDiv.textContent = `${messageData.items?.length || 0} items available`;
+                        }
+                        break;
+
+                    default:
+                        // Unknown type, treat as plain text
+                        contentDiv.textContent = String(content);
+                }
+            } catch (error) {
+                console.error('[Chatbot] Content rendering failed:', error);
+                // Fallback to plain text on error
+                contentDiv.textContent = typeof content === 'string' ? content : String(content);
+            }
+        }
+
         init() {
             // Get DOM elements
             this.chatInputBar = document.getElementById('sw-chat-input-bar');
@@ -1901,6 +2896,28 @@ ${poweredByHTML}
             this.panelChatInput = document.getElementById('sw-panel-chat-input');
             this.panelSendBtn = document.getElementById('sw-panel-send-btn');
             this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+            this.panelNewChatBtn = document.getElementById('sw-panel-new-chat-btn');
+
+            // Simplified scroll handling - no observers needed
+            // Scroll is triggered directly by rendering logic with throttling
+            console.log('[SCROLL] Simplified scroll mechanism initialized');
+
+            // Populate chat logo with bot avatar (image or emoji)
+            const chatLogo = this.chatPanel.querySelector('.sw-chat-logo');
+            if (chatLogo) {
+                chatLogo.innerHTML = '';  // Clear template placeholder
+                this.renderBotAvatar(chatLogo);
+            }
+
+            // Pre-calculate pill width for smooth animations (eliminates layout thrashing)
+            this.calculateAndCachePillWidth();
+
+            // Load conversation from localStorage if available
+            const conversationLoaded = this.loadConversation();
+            if (conversationLoaded && this.messageHistory.length > 0) {
+                // Restore message UI from loaded history
+                this.restoreMessagesUI();
+            }
 
             // Bind events for bar (only if bar is enabled)
             if (this.chatInputBar && this.barChatInput && this.barSendBtn && this.barCloseBtn) {
@@ -1917,8 +2934,29 @@ ${poweredByHTML}
                 this.barCloseBtn.addEventListener('click', () => this.dismissBar());
             }
 
-            // Bind events for bubble
-            this.chatWidgetBubble.addEventListener('click', () => this.openPanel());
+            // Bind events for bubble - always use animation (discovery moment)
+            this.chatWidgetBubble.addEventListener('click', () => {
+                const animationTier = this.getAnimationTier();
+
+                if (animationTier === 'instant') {
+                    this.openPanelImmediate();
+                } else if (animationTier === 'fast') {
+                    // Mobile/tablet/small screens always use fast animation
+                    this.openPanelWithFastAnimation();
+                } else {
+                    // Desktop: Session-based animation - full on first open, fast on subsequent
+                    const hasOpenedThisSession = sessionStorage.getItem('sw_widget_opened_this_session');
+
+                    if (!hasOpenedThisSession) {
+                        // First open this session - show full premium animation
+                        this.openPanelWithAnimation();
+                        sessionStorage.setItem('sw_widget_opened_this_session', 'true');
+                    } else {
+                        // Subsequent opens - fast streamlined animation
+                        this.openPanelWithFastAnimation();
+                    }
+                }
+            });
             
             // Bind events for panel
             this.panelChatInput.addEventListener('keydown', (e) => {
@@ -1936,17 +2974,22 @@ ${poweredByHTML}
             });
             this.panelSendBtn.addEventListener('click', () => this.sendFromPanel());
             this.panelCloseBtn.addEventListener('click', () => this.closePanel());
+            this.panelNewChatBtn.addEventListener('click', () => this.startNewChat());
 
             // Scroll behavior
             window.addEventListener('scroll', () => this.handleScroll());
 
-            // Detect user scrolling in chat
-            this.chatMessages.addEventListener('scroll', () => {
-                this.userIsScrolling = true;
-                clearTimeout(this.scrollTimeout);
-                this.scrollTimeout = setTimeout(() => {
-                    this.userIsScrolling = false;
-                }, 1000);  // User stopped scrolling after 1 second
+            // No scroll event handler needed - we use stateless position checks instead!
+
+            // Mobile: Use same position-based detection (no 1-second delays)
+            this.chatMessages.addEventListener('touchstart', () => {
+                // Let the scroll handler manage auto-scroll state
+                // No need to block immediately
+            });
+
+            this.chatMessages.addEventListener('touchend', () => {
+                // Position-based detection will handle this automatically
+                // No 1-second delay needed
             });
 
             // Keyboard shortcuts for accessibility
@@ -2032,7 +3075,7 @@ ${poweredByHTML}
             this.chatMessages.appendChild(separator);
         }
         
-        renderQuickQuestions() {
+        renderQuickQuestions(fastMode = false) {
             const existingSection = document.querySelector('.sw-quick-questions-section');
             if (existingSection) existingSection.remove();
 
@@ -2062,33 +3105,44 @@ ${poweredByHTML}
             }
 
             section.appendChild(header);
-            
+
             const list = document.createElement('div');
             list.className = 'sw-quick-questions-list';
             list.setAttribute('role', 'list');
-            
+
+            // Use shorter delays for fast mode (second open)
+            const baseDelay = fastMode ? 0.1 : 1.3;
+            const incrementDelay = fastMode ? 0.05 : 0.1;
+
             CONFIG.quickQuestions.forEach((question, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'sw-quick-question-btn';
                 btn.setAttribute('role', 'listitem');
                 btn.setAttribute('aria-label', question.text);
-                btn.style.animationDelay = `${index * 0.1}s`;
-                
+                btn.style.animationDelay = `${baseDelay + (index * incrementDelay)}s`;
+                btn.style.opacity = '0';
+
                 const textSpan = document.createElement('span');
                 textSpan.className = 'question-text';
                 textSpan.textContent = question.text;
                 btn.appendChild(textSpan);
-                
+
                 const emojiSpan = document.createElement('span');
                 emojiSpan.className = 'question-emoji';
                 emojiSpan.textContent = question.emoji;
                 emojiSpan.setAttribute('aria-hidden', 'true');
                 btn.appendChild(emojiSpan);
-                
+
+                // Clear animation after completion to allow hover transforms to work
+                btn.addEventListener('animationend', () => {
+                    btn.style.opacity = '1';  // Lock in final opacity
+                    btn.style.animation = 'none';  // Remove animation to unblock hover
+                }, { once: true });
+
                 btn.addEventListener('click', () => this.sendQuickQuestion(question.text));
                 list.appendChild(btn);
             });
-            
+
             section.appendChild(list);
             this.chatMessages.appendChild(section);
         }
@@ -2096,15 +3150,20 @@ ${poweredByHTML}
         hideQuickQuestions() {
             const section = document.querySelector('.sw-quick-questions-section');
             if (section) {
-                section.classList.add('hidden');
-                setTimeout(() => section.remove(), 300);
+                // Instant removal - no fade animation to prevent friction
+                section.remove();
             }
         }
         
         async sendQuickQuestion(question) {
             this.hideQuickQuestions();
             this.firstMessageSent = true;
-            this.sendMessage(question);
+
+            // User explicitly clicked a question - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            console.log('[AutoScroll] User clicked quick question, enabling auto-scroll');
+
+            await this.sendMessage(question);
         }
         
         startNewChat() {
@@ -2112,7 +3171,13 @@ ${poweredByHTML}
             this.chatMessages.innerHTML = '';
             this.firstMessageSent = false;
             this.sessionId = this.generateUUID();
-            this.renderQuickQuestions();
+
+            // Clear localStorage (for conversation persistence)
+            if (CONFIG.persistence?.enabled) {
+                localStorage.removeItem(CONFIG.persistence.storageKey);
+            }
+
+            this.renderQuickQuestions(true);  // Use fast mode for intentional resets
         }
         
         async sendFromBar() {
@@ -2123,14 +3188,21 @@ ${poweredByHTML}
             this.barChatInput.value = '';
             this.barSendBtn.classList.remove('active');
             this.chatInputBar.classList.remove('expanded');
-            this.openPanel();
 
+            // Remove quick questions immediately (no timeout) to prevent them appearing in panel
             if (!this.firstMessageSent) {
-                this.hideQuickQuestions();
+                const section = document.querySelector('.sw-quick-questions-section');
+                if (section) section.remove();  // Immediate removal, no race condition
                 this.firstMessageSent = true;
             }
 
-            this.sendMessage(message);
+            this.openPanelImmediate();  // Immediate open for task completion - no animation delay
+
+            // User explicitly sent a message - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            console.log('[AutoScroll] User sent message from bar, enabling auto-scroll');
+
+            await this.sendMessage(message);
         }
         
         async sendFromPanel() {
@@ -2139,35 +3211,158 @@ ${poweredByHTML}
 
             this.panelChatInput.value = '';
             this.autoResizeTextarea(this.panelChatInput); // Reset height
-            this.panelChatInput.disabled = true;
-            this.panelSendBtn.disabled = true; // Keep disabled while sending
 
             if (!this.firstMessageSent) {
                 this.hideQuickQuestions();
                 this.firstMessageSent = true;
             }
 
-            try {
-                await this.sendMessage(message);
-            } catch (error) {
-                console.error('[Chatbot] Send from panel error:', error);
-            } finally {
-                // ALWAYS re-enable, even if there's an error
-                this.panelChatInput.disabled = false;
-                this.panelSendBtn.disabled = false;
-                this.panelChatInput.focus();
-            }
+            // User explicitly sent a message - always scroll to bottom (industry standard)
+            this.shouldAutoScroll = true;
+            console.log('[AutoScroll] User sent message, enabling auto-scroll');
+
+            await this.sendMessage(message);
         }
-        
+
+        /**
+         * HTMLStreamBuffer - Bulletproof HTML streaming with incomplete tag detection
+         * Handles tags split across chunks without breaking rendering
+         */
+        createHTMLStreamBuffer() {
+            return {
+                buffer: '',
+
+                /**
+                 * Process chunk and return only complete, safe-to-render HTML
+                 * Buffers incomplete tags/entities for next chunk
+                 */
+                processChunk(chunk) {
+                    // Add chunk to buffer
+                    this.buffer += chunk;
+
+                    // Find last safe position (complete tags only)
+                    const safeIndex = this.findLastSafePosition(this.buffer);
+
+                    if (safeIndex === 0) {
+                        // Everything is incomplete, buffer it all
+                        console.log('[HTMLBuffer] Buffering incomplete fragment:', this.buffer.length, 'chars');
+                        return '';
+                    }
+
+                    // Extract safe content (complete tags)
+                    const safeContent = this.buffer.substring(0, safeIndex);
+
+                    // Keep incomplete part in buffer for next chunk
+                    this.buffer = this.buffer.substring(safeIndex);
+
+                    if (this.buffer.length > 0) {
+                        console.log('[HTMLBuffer] Buffered incomplete:', JSON.stringify(this.buffer));
+                    }
+
+                    return safeContent;
+                },
+
+                /**
+                 * Find the last position where HTML is complete and safe to split
+                 * SIMPLIFIED STRATEGY (for innerHTML replacement):
+                 * - Only buffer truly incomplete fragments (tags, entities)
+                 * - All complete HTML renders immediately via innerHTML replacement
+                 * - Browser handles nesting correctly when parsing complete HTML string
+                 * Returns index of last safe character, or 0 if nothing is safe
+                 */
+                findLastSafePosition(html) {
+                    // STEP 1: Check for incomplete opening/closing tag at end
+                    // Examples: <p, <li, </b, <a href="..., <strong
+                    // Pattern: < followed by anything except >
+                    const incompleteTag = html.match(/<[^>]*$/);
+                    if (incompleteTag) {
+                        const incompleteStart = html.length - incompleteTag[0].length;
+                        console.log('[HTMLBuffer] Incomplete tag:', JSON.stringify(incompleteTag[0]));
+                        return incompleteStart;
+                    }
+
+                    // STEP 2: Check for incomplete HTML entity at end
+                    // Examples: &amp, &lt, &#123, &nbsp
+                    // Pattern: & followed by alphanumeric/# without semicolon
+                    const incompleteEntity = html.match(/&[a-zA-Z0-9#]*$/);
+                    if (incompleteEntity) {
+                        const incompleteStart = html.length - incompleteEntity[0].length;
+                        console.log('[HTMLBuffer] Incomplete entity:', JSON.stringify(incompleteEntity[0]));
+                        return incompleteStart;
+                    }
+
+                    // STEP 3: Check for word boundary - prevent mid-word splits for smooth rendering
+                    // If buffer doesn't end with space, punctuation, or tag closer, we might be mid-word
+                    const endsWithWordBoundary = /[\s\.,;:!?\)>\-]$/.test(html);
+                    if (!endsWithWordBoundary && html.length > 0) {
+                        // Find the last word boundary
+                        const lastBoundary = html.search(/[\s\.,;:!?\)>\-][^\s\.,;:!?\)>\-]*$/);
+                        if (lastBoundary !== -1) {
+                            // Found a boundary - split there (include the boundary character)
+                            console.log('[HTMLBuffer] Mid-word detected, buffering from last boundary');
+                            return lastBoundary + 1;
+                        }
+                    }
+
+                    // Everything is complete and safe - render immediately via innerHTML
+                    // Browser handles all nesting when parsing complete HTML string
+                    return html.length;
+                },
+
+                /**
+                 * Flush remaining buffer (called when stream ends)
+                 * Returns any buffered content (should be empty in well-formed HTML)
+                 */
+                flush() {
+                    const remaining = this.buffer;
+                    this.buffer = '';
+
+                    if (remaining.length > 0) {
+                        console.warn('[HTMLBuffer] Flushing incomplete HTML at stream end:', JSON.stringify(remaining));
+                    }
+
+                    return remaining;
+                },
+
+                /**
+                 * Reset buffer (for new messages)
+                 */
+                reset() {
+                    this.buffer = '';
+                }
+            };
+        }
+
+        // Helper methods to disable/enable all inputs
+        disableInputs() {
+            if (this.panelChatInput) this.panelChatInput.disabled = true;
+            if (this.panelSendBtn) this.panelSendBtn.disabled = true;
+            if (this.barChatInput) this.barChatInput.disabled = true;
+            if (this.barSendBtn) this.barSendBtn.disabled = true;
+        }
+
+        enableInputs() {
+            if (this.panelChatInput) {
+                this.panelChatInput.disabled = false;
+                this.panelChatInput.focus(); // Return focus to panel input
+            }
+            if (this.panelSendBtn) this.panelSendBtn.disabled = false;
+            if (this.barChatInput) this.barChatInput.disabled = false;
+            if (this.barSendBtn) this.barSendBtn.disabled = false;
+        }
+
         async sendMessage(content) {
             const messageTimestamp = new Date();
             this.addMessage(content, 'user');
-            
+
+            // Disable ALL inputs to prevent message spam while bot is responding
+            this.disableInputs();
+
             // Create bot message with empty content (shows typing indicator)
             const botMessageId = Date.now().toString();
             this.addBotMessage(botMessageId, '');
             this.showTypingIndicator(botMessageId);
-            
+
             try {
                 const requestId = `${this.sessionId}-${messageTimestamp.getTime()}`;
                 const payload = {
@@ -2176,13 +3371,13 @@ ${poweredByHTML}
                     session_id: this.sessionId,
                     request_id: requestId
                 };
-                
+
                 const response = await postWithRetry(
                     CONFIG.apiEndpoint,
                     payload,
                     { headers: { 'X-Request-Id': requestId } }
                 );
-                
+
                 console.log('[Chatbot] Webhook response status:', response.status);
 
                 // Process SSE streaming response with timeout protection
@@ -2200,34 +3395,154 @@ ${poweredByHTML}
             } finally {
                 // Defensive: Also hide here in case processStreamingResponse errors before its finally
                 this.hideTypingIndicator(botMessageId);
+                // Re-enable inputs after bot response completes (or errors)
+                this.enableInputs();
             }
         }
         
         async processStreamingResponse(response, messageId) {
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-            
+
             if (!reader) {
                 throw new Error('No response body reader available');
             }
-            
+
+            // Set streaming state for auto-scroll behavior
+            console.log('[SCROLL-DEBUG] ========== STREAMING STARTED ==========');
+            this.isActivelyStreaming = true;
+
+            // FAILSAFE: Ensure autoscroll is enabled at start of streaming
+            this.shouldAutoScroll = true;
+
+            // FAILSAFE: Periodic check to ensure autoscroll stays active during streaming
+            // This catches edge cases where autoscroll might get disabled incorrectly
+            const autoscrollFailsafe = setInterval(() => {
+                // Safety: clear interval if streaming ended (catches error cases)
+                if (!this.isActivelyStreaming) {
+                    clearInterval(autoscrollFailsafe);
+                    return;
+                }
+
+                // PREVENT FIGHTING: Don't interfere with ongoing scroll operations
+                if (this.isAutoScrolling) {
+                    return;
+                }
+
+                // CRITICAL: Don't interfere if user manually scrolled recently (within 1 second)
+                // This prevents fighting the user and allows seamless manual control
+                const timeSinceUserScroll = Date.now() - this.lastUserScrollTime;
+                if (timeSinceUserScroll < 1000) {
+                    return; // User is actively scrolling, don't interfere
+                }
+
+                // If we should be autoscrolling and we're at bottom, force a scroll
+                if (this.shouldAutoScroll && this.isNearBottom()) {
+                    this.scrollToBottom();
+                }
+            }, 500); // Check every 500ms
+
             let buffer = '';
             let firstChunkReceived = false;
-            
+
+            // NEW: Chunk queue for controlled streaming display
+            const chunkQueue = [];
+            let displayedContent = '';
+            let isProcessingQueue = false;
+            let streamComplete = false;
+            let queueFinishedResolve = null;
+            const queueFinishedPromise = new Promise(resolve => queueFinishedResolve = resolve);
+
             // Reset streaming buffer
             this.streamingBuffer = {
                 content: '',
-                messageId: messageId
+                messageId: messageId,
+                isStructured: false
             };
-            
-            // Start batch update interval
-            const batchInterval = setInterval(() => {
-                if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
-                    const contentToUpdate = this.streamingBuffer.content;
-                    const msgId = this.streamingBuffer.messageId;
-                    this.updateMessage(msgId, contentToUpdate);
+
+            // Create HTML stream buffer for handling incomplete tags
+            const htmlBuffer = this.createHTMLStreamBuffer();
+
+            // ARCHITECTURAL REDESIGN: Track accumulated HTML for innerHTML replacement
+            // This solves the insertAdjacentHTML nesting problem permanently
+            let accumulatedSanitizedHTML = '';
+
+            // Process queue: innerHTML replacement strategy for bulletproof nested HTML
+            const processQueue = () => {
+                if (isProcessingQueue) {
+                    return;
                 }
-            }, CONFIG.streamBatchIntervalMs);
+
+                // If stream is complete and queue is empty, signal completion
+                if (streamComplete && chunkQueue.length === 0) {
+                    console.log('[Chatbot] Queue processing complete');
+                    queueFinishedResolve();
+                    return;
+                }
+
+                // No more chunks to process right now
+                if (chunkQueue.length === 0) {
+                    return;
+                }
+
+                isProcessingQueue = true;
+                const chunk = chunkQueue.shift();
+
+                // Add raw chunk to total displayed content (for history)
+                displayedContent += chunk;
+                this.streamingBuffer.content = displayedContent;
+
+                // ARCHITECTURAL REDESIGN: innerHTML replacement for proper nesting
+                const messageDiv = document.getElementById(messageId);
+                if (messageDiv) {
+                    const contentDiv = messageDiv.querySelector('.sw-message-content');
+                    if (contentDiv) {
+                        // Ensure markdown class is applied for CSS styling
+                        if (!contentDiv.classList.contains('markdown')) {
+                            contentDiv.classList.add('markdown');
+                        }
+
+                        // Process chunk through HTML buffer (handles incomplete tags)
+                        const completeHTML = htmlBuffer.processChunk(chunk);
+
+                        // Only proceed if we have complete HTML to render
+                        if (completeHTML) {
+                            // Add to accumulated HTML string
+                            accumulatedSanitizedHTML += completeHTML;
+
+                            // Sanitize the ENTIRE accumulated HTML as one cohesive structure
+                            const sanitized = window.DOMPurify.sanitize(accumulatedSanitizedHTML, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+
+                            // CRITICAL: Replace entire innerHTML (not append) to maintain proper nesting
+                            // This allows <li><b>text</b> to be parsed as one structure
+                            contentDiv.innerHTML = sanitized;
+                            console.log('[Chatbot] ✅ Rendered HTML (innerHTML replacement):', completeHTML.substring(0, 50) + '...');
+                        } else {
+                            console.log('[Chatbot] ⏳ Buffered chunk (incomplete), waiting...');
+                        }
+
+                        // Auto-scroll handled by MutationObserver - no manual scroll needed
+                    }
+                }
+
+                // Chunk complete, ready for next chunk
+                isProcessingQueue = false;
+
+                // Process next chunk if available
+                if (chunkQueue.length > 0) {
+                    // Small delay between chunks for readability
+                    setTimeout(processQueue, 30);
+                } else if (streamComplete) {
+                    // All done
+                    console.log('[Chatbot] Queue processing complete');
+                    queueFinishedResolve();
+                }
+            };
             
             try {
                 while (true) {
@@ -2292,9 +3607,10 @@ ${poweredByHTML}
 
                                         // NEW: Card or structured data (complete object)
                                         if (contentObj.type === 'card' || contentObj.type === 'carousel' || contentObj.title) {
-                                            // Don't stream cards - wait for complete object
+                                            // Don't stream cards - display immediately
                                             this.streamingBuffer.content = contentObj;
                                             this.streamingBuffer.isStructured = true;
+                                            this.updateMessage(messageId, contentObj);
                                             console.log('[Chatbot] Received structured content:', contentObj.type || 'card');
                                             continue;
                                         }
@@ -2305,10 +3621,15 @@ ${poweredByHTML}
                                     chunkContent = item.content;
                                 }
 
-                                // Add chunk to buffer (only for text streaming, not structured data)
+                                // NEW: Add chunk to queue (only for text streaming, not structured data)
                                 if (chunkContent && !this.streamingBuffer.isStructured) {
-                                    this.streamingBuffer.content += chunkContent;
-                                    console.log('[Chatbot] Buffered chunk:', chunkContent);
+                                    chunkQueue.push(chunkContent);
+                                    console.log('[Chatbot] 📥 Raw chunk received:', JSON.stringify(chunkContent));
+
+                                    // Start processing if not already running
+                                    if (!isProcessingQueue) {
+                                        processQueue();
+                                    }
                                 }
                             }
                         } catch (lineError) {
@@ -2324,21 +3645,70 @@ ${poweredByHTML}
                     console.warn('[Chatbot] Reader release failed:', e);
                 }
 
-                // Stop batch updates
-                clearInterval(batchInterval);
+                // Signal that stream is complete
+                streamComplete = true;
+                console.log('[Chatbot] Stream complete, chunks in queue:', chunkQueue.length);
 
-                // CRITICAL FIX: Hide typing indicator BEFORE final flush
+                // If structured content or no queue, resolve immediately
+                if (this.streamingBuffer.isStructured || chunkQueue.length === 0) {
+                    console.log('[Chatbot] No queue processing needed, resolving immediately');
+                    queueFinishedResolve();
+                } else {
+                    // Process any remaining items in queue
+                    console.log('[Chatbot] Waiting for queue to finish processing...');
+                    processQueue();
+                }
+
+                // Wait for queue to finish processing all chunks
+                await queueFinishedPromise;
+                console.log('[Chatbot] Queue processing finished');
+
+                // Flush any remaining buffered HTML (incomplete tags at stream end)
+                const messageDiv = document.getElementById(messageId);
+                if (messageDiv) {
+                    const contentDiv = messageDiv.querySelector('.sw-message-content');
+                    if (contentDiv) {
+                        const remainingHTML = htmlBuffer.flush();
+                        if (remainingHTML) {
+                            // Sanitize and append any remaining content
+                            const sanitized = window.DOMPurify.sanitize(remainingHTML, {
+                                ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ul', 'ol', 'li',
+                                              'code', 'pre', 'blockquote', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+                                ALLOWED_ATTR: ['href', 'title', 'target', 'rel'],
+                                ALLOW_DATA_ATTR: false
+                            });
+                            if (sanitized.trim()) {
+                                contentDiv.insertAdjacentHTML('beforeend', sanitized);
+                                console.log('[Chatbot] Flushed remaining HTML:', sanitized.length, 'chars');
+                            }
+                        }
+                    }
+                }
+
+                // Hide typing indicator after queue is done
                 this.hideTypingIndicator(messageId);
 
-                // Final flush
-                if (this.streamingBuffer.content && this.streamingBuffer.messageId) {
-                    const finalContent = this.streamingBuffer.content;
-                    const msgId = this.streamingBuffer.messageId;
-                    this.updateMessage(msgId, finalContent);
+                // Reset streaming state
+                console.log('[SCROLL-DEBUG] ========== STREAMING ENDED ==========');
+                this.isActivelyStreaming = false;
+                clearInterval(autoscrollFailsafe); // Stop failsafe checks
+
+                // FINALIZATION: Simple cleanup and save
+                console.log('[Chatbot] Finalizing stream');
+
+                // Auto-scroll handled by MutationObserver - no manual scroll needed
+
+                // Save to message history - use displayed content (what actually showed to user)
+                const finalContent = displayedContent || this.streamingBuffer.content;
+                if (finalContent) {
+                    console.log('[Chatbot] Saving final content, length:', finalContent.length, 'chars');
+                    this.messageHistory.push({ role: 'bot', content: finalContent, time: new Date() });
+                    this.saveConversation();
                 } else {
-                    // Check if we got any content
-                    console.error('[Chatbot] No content extracted from stream');
-                    this.updateMessage(messageId, '⚠️ No content received from stream');
+                    console.error('[Chatbot] No content received from stream');
+                    this.updateMessage(messageId, 'Oops! I am sorry, I am having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.');
+                    this.messageHistory.push({ role: 'bot', content: 'Oops! I am sorry, I am having trouble connecting right now. Please try again or contact us at tmk@semmelweis.hu.', time: new Date() });
+                    this.saveConversation();
                 }
             }
 
@@ -2347,6 +3717,58 @@ ${poweredByHTML}
         }
         
         openPanel() {
+            // Check if user prefers reduced motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // Use animation if not already animating and user doesn't prefer reduced motion
+            if (!prefersReducedMotion && !this.isAnimating) {
+                this.openPanelWithAnimation();
+            } else {
+                this.openPanelImmediate();
+            }
+        }
+
+        getAnimationTier() {
+            // Determine animation complexity based on device capabilities
+            const width = window.innerWidth;
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            // Instant for reduced motion preference
+            if (prefersReducedMotion) return 'instant';
+
+            // Fast animation for mobile devices and small screens
+            if (isMobile || width < 1024) return 'fast';
+
+            // Full complex animation for desktop
+            return 'full';
+        }
+
+        preventBodyScroll() {
+            // Save current scroll position to prevent page jump on mobile
+            this.scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Apply scroll lock with position preservation
+            document.body.classList.add('sw-chat-open');
+
+            // On mobile, maintain scroll position visually
+            if (window.innerWidth <= 768) {
+                document.body.style.top = `-${this.scrollPosition}px`;
+            }
+        }
+
+        restoreBodyScroll() {
+            // Remove scroll lock
+            document.body.classList.remove('sw-chat-open');
+
+            // Restore scroll position on mobile
+            if (window.innerWidth <= 768 && this.scrollPosition !== undefined) {
+                document.body.style.top = '';
+                window.scrollTo(0, this.scrollPosition);
+            }
+        }
+
+        openPanelImmediate() {
             this.isPanelOpen = true;
             this.chatPanel.classList.add('visible');
             this.chatWidgetBubble.classList.add('chat-open');
@@ -2354,39 +3776,400 @@ ${poweredByHTML}
                 this.chatInputBar.classList.add('hidden');
             }
 
-            // Prevent body scroll on mobile
-            document.body.classList.add('sw-chat-open');
+            // Prevent body scroll on mobile (with position preservation)
+            this.preventBodyScroll();
 
-            const badge = document.querySelector('.sw-bubble-badge');
-            if (badge) badge.style.display = 'none';
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
 
             // Show quick questions on first open (timestamp only appears after first Q&A pair)
-            if (this.messageHistory.length === 0) {
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
                 this.renderQuickQuestions();
             }
 
-            setTimeout(() => this.panelChatInput.focus(), 500);
+            // Focus input on desktop only (prevents unwanted scroll on mobile)
+            if (window.innerWidth > 768) {
+                setTimeout(() => this.panelChatInput.focus(), 500);
+            }
+        }
+
+        openPanelWithAnimation() {
+            // Prevent multiple animations from running simultaneously
+            if (!this.animationLock.acquire('full-open')) return;
+
+            // Keep legacy flag for compatibility
+            this.isAnimating = true;
+
+            const bubble = this.chatWidgetBubble;
+            const panel = this.chatPanel;
+            const header = panel.querySelector('.sw-chat-header');
+
+            // ========================================
+            // STAGE 0: CLICK ANIMATION SEQUENCE
+            // ========================================
+
+            // Save original bubble content
+            const originalBubbleContent = bubble.innerHTML;
+
+            // Create icon containers for smooth transition
+            const widgetIconContainer = document.createElement('div');
+            widgetIconContainer.className = 'sw-bubble-widget-icon';
+            widgetIconContainer.innerHTML = originalBubbleContent;
+
+            const botIconContainer = document.createElement('div');
+            botIconContainer.className = 'sw-bubble-bot-icon-click';
+
+            // Create inner icon with background circle (matches morph icon)
+            const botIconInner = document.createElement('div');
+            botIconInner.className = 'sw-bubble-bot-icon-inner';
+            this.renderBotAvatar(botIconInner);
+
+            botIconContainer.appendChild(botIconInner);
+
+            // Replace bubble content with layered icons
+            bubble.innerHTML = '';
+            bubble.appendChild(widgetIconContainer);
+            bubble.appendChild(botIconContainer);
+
+            // Force reflow
+            bubble.offsetHeight;
+
+            // STAGE 1: Click Press
+            bubble.classList.add('clicking');
+
+            setTimeout(() => {
+                // Remove click class
+                bubble.classList.remove('clicking');
+
+                // STAGE 2: Bounce with Icon Swap
+                bubble.classList.add('bouncing');
+
+                // Start icon swap animations at bounce start
+                setTimeout(() => {
+                    widgetIconContainer.classList.add('animating');
+                    botIconContainer.classList.add('animating');
+                }, ANIMATION_TIMING.iconSwapDelay);
+
+                setTimeout(() => {
+                    // Remove bounce class
+                    bubble.classList.remove('bouncing');
+
+                    // STAGE 3: Settle & Hold
+                    // Clean up - restore bubble to final state
+                    bubble.innerHTML = '';
+                    bubble.style.opacity = '0'; // Ready to hide for morph
+
+                    // STAGE 4: Start Pill Expansion
+                    // Now create the morph element and continue with existing animation
+                    this.startPillExpansion(bubble, panel, header);
+
+                }, ANIMATION_TIMING.bounce);
+
+            }, ANIMATION_TIMING.clickPress);
+        }
+
+        startPillExpansion(bubble, panel, header) {
+            // Get bubble position
+            const bubbleRect = bubble.getBoundingClientRect();
+
+            // Create morphing element with bot emoji (not widget SVG)
+            const morph = document.createElement('div');
+            morph.className = 'sw-morph-element';
+
+            const morphIcon = document.createElement('div');
+            morphIcon.className = 'sw-morph-icon';
+            this.renderBotAvatar(morphIcon);
+
+            const morphText = document.createElement('span');
+            morphText.className = 'sw-morph-text';
+            morphText.textContent = CONFIG.branding.botName;
+
+            morph.appendChild(morphIcon);
+            morph.appendChild(morphText);
+
+            // Set initial circle state - NO transitions yet
+            morph.classList.add('circle-state');
+            morph.style.transition = 'none';
+            morph.style.left = bubbleRect.left + 'px';
+            morph.style.top = bubbleRect.top + 'px';
+            morph.style.width = bubbleRect.width + 'px';
+            morph.style.height = bubbleRect.height + 'px';
+            morph.style.borderRadius = '50%';
+
+            document.body.appendChild(morph);
+
+            // Force reflow to ensure initial state is rendered
+            morph.offsetHeight;
+
+            // Hide original bubble
+            bubble.classList.add('hidden-during-animation');
+
+            // Render quick questions BEFORE animation so content is already laid out
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
+                this.renderQuickQuestions();
+            }
+
+            // Position panel below viewport for slide-up animation
+            this.isPanelOpen = true;
+            panel.style.visibility = 'visible'; // Make visible but positioned below
+            panel.style.opacity = '0';  // Start transparent
+            panel.style.transform = 'translateY(calc(100% + 50px))';  // Position below viewport
+            panel.style.transition = 'none';  // Disable transitions initially
+            panel.classList.add('visible');
+
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
+
+            if (header) header.classList.add('hidden-during-animation');
+
+            // Hide floating bar
+            if (this.chatInputBar) {
+                this.chatInputBar.classList.add('hidden');
+            }
+            this.preventBodyScroll();
+
+            // Calculate header position - triple RAF for better layout settling
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {  // Triple RAF for stable position
+                        if (!header) {
+                            this.finishAnimation(morph, bubble, panel, header);
+                            return;
+                        }
+
+                        const headerRect = header.getBoundingClientRect();
+
+                        // Use cached pill width (calculated once at init for performance)
+                        const requiredPillWidth = this.cachedPillWidth;
+
+                        // STAGE 1: Hold circle (user sees emoji clearly)
+                        setTimeout(() => {
+                            // Enable transitions for width/height/left changes to expand leftward
+                            morph.style.transition = 'width 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), height 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), left 0.5s cubic-bezier(0.16, 1.3, 0.3, 1), border-radius 0.5s ease';
+
+                            // STAGE 2: Expand to pill LEFTWARD (keeping right edge anchored)
+                            setTimeout(() => {
+                                morph.classList.remove('circle-state');
+                                morph.classList.add('pill-state', 'show-text');
+
+                                // Calculate new left position to keep right edge fixed
+                                // Using dynamically calculated width instead of header width
+                                const newLeft = bubbleRect.right - requiredPillWidth;
+
+                                morph.style.left = newLeft + 'px';
+                                morph.style.width = requiredPillWidth + 'px';
+                                morph.style.height = headerRect.height + 'px';
+                                morph.style.borderRadius = '999px';
+                            }, ANIMATION_TIMING.transitionEnable);
+
+                            // STAGE 3: UNIFIED upward motion - pill + panel rise together
+                            setTimeout(() => {
+                                // Premium easing curves for fluid crossfade
+                                const premiumEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+                                const fadeOutEasing = 'cubic-bezier(0.4, 0, 1, 1)';  // Ease-in: smooth disappearance
+                                const fadeInEasing = 'cubic-bezier(0, 0, 0.2, 1)';   // Ease-out: fluid emergence
+
+                                // Animate pill upward with smooth fade-out creating sliding illusion
+                                morph.style.transition = `all 0.7s ${premiumEasing}, opacity 0.5s ${fadeOutEasing}`;
+                                morph.style.left = headerRect.left + 'px';
+                                morph.style.top = headerRect.top + 'px';
+                                morph.style.opacity = '0';  // Fade out smoothly during upward motion
+
+                                // Simultaneously animate panel upward (slide from below)
+                                panel.style.transition = `transform 0.7s ${premiumEasing}, opacity 0.4s ${fadeInEasing}`;
+                                panel.style.transform = 'translateY(0)';  // Slide up to final position
+                                panel.style.opacity = '1';  // Fade in fluidly during slide
+                                panel.style.pointerEvents = '';
+
+                                // Fade in real header with fluid emergence (seamless crossfade)
+                                if (header) {
+                                    const headerDelay = ANIMATION_TIMING.headerFadeStart / 1000;  // Convert ms to seconds
+                                    header.style.transition = `opacity 0.4s ${fadeInEasing} ${headerDelay}s`;  // Fluid fade-in for seamless crossfade
+                                    header.classList.remove('hidden-during-animation');
+                                }
+                            }, ANIMATION_TIMING.pillExpansionTotal);
+
+                            // STAGE 4: Complete animation
+                            setTimeout(() => {
+                                this.finishAnimation(morph, bubble, panel, header);
+                            }, ANIMATION_TIMING.fullAnimationTotal);
+
+                        }, ANIMATION_TIMING.circleHold);
+                    });
+                });
+            });
+        }
+
+        finishAnimation(morph, bubble, panel, header) {
+            // Show real header
+            if (header) {
+                header.classList.remove('hidden-during-animation');
+                header.style.transition = '';  // Clear inline transition
+            }
+
+            // Remove morphing element
+            if (morph && morph.parentNode) {
+                morph.remove();
+            }
+
+            // Update bubble state
+            bubble.classList.remove('hidden-during-animation');
+            bubble.classList.add('chat-open');
+
+            // Clean up panel inline styles to prevent conflicts
+            panel.classList.remove('animating-in');
+            panel.style.transform = '';  // Clear inline transform, let CSS take over
+            panel.style.transition = '';  // Clear inline transition
+
+            // Quick questions already rendered before animation started
+
+            // Re-bind close button (ensure it works)
+            this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+            if (this.panelCloseBtn) {
+                // Remove old listener if exists and add fresh one
+                this.panelCloseBtn.replaceWith(this.panelCloseBtn.cloneNode(true));
+                this.panelCloseBtn = document.getElementById('sw-panel-close-btn');
+                this.panelCloseBtn.addEventListener('click', () => this.closePanel());
+            }
+
+            // Focus input and reset animation flag
+            setTimeout(() => {
+                // Focus input on desktop only (prevents unwanted scroll on mobile)
+                if (this.panelChatInput && window.innerWidth > 768) {
+                    this.panelChatInput.focus();
+                }
+                this.isAnimating = false;
+                this.animationLock.release();
+            }, ANIMATION_TIMING.cleanupDelay);
+        }
+
+        openPanelWithFastAnimation() {
+            // Streamlined animation for repeat opens within same session (~600ms total)
+            if (!this.animationLock.acquire('fast-open')) return;
+
+            // Keep legacy flag for compatibility
+            this.isAnimating = true;
+
+            const bubble = this.chatWidgetBubble;
+            const panel = this.chatPanel;
+
+            // Hide bubble immediately
+            bubble.classList.add('chat-open');
+
+            // Hide floating bar
+            if (this.chatInputBar) {
+                this.chatInputBar.classList.add('hidden');
+            }
+            this.preventBodyScroll();
+
+            // Render quick questions if needed - use fast mode for second open
+            // But NOT when sending from floating bar (firstMessageSent will be true)
+            if (this.messageHistory.length === 0 && !this.firstMessageSent) {
+                this.renderQuickQuestions(true);  // Fast mode
+            }
+
+            // Fast panel animation: shorter duration, less transform
+            this.isPanelOpen = true;
+            panel.classList.add('visible');
+
+            // Initialize industry-standard auto-scroll system
+            this.setupScrollListener();
+            this.setupScrollObserver();
+
+            panel.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease';
+
+            // Panel starts slightly below and scaled down
+            requestAnimationFrame(() => {
+                panel.style.transform = 'scale(1) translateY(0)';
+                panel.style.opacity = '1';
+            });
+
+            // Clean up and focus
+            setTimeout(() => {
+                panel.style.transition = '';
+                panel.style.transform = '';
+                // Focus input on desktop only (prevents unwanted scroll on mobile)
+                if (this.panelChatInput && window.innerWidth > 768) {
+                    this.panelChatInput.focus();
+                }
+                this.isAnimating = false;
+                this.animationLock.release();
+            }, ANIMATION_TIMING.fastPanelSlide + ANIMATION_TIMING.fastCleanupDelay);
         }
 
         closePanel() {
             this.isPanelOpen = false;
-            this.chatPanel.classList.remove('visible');
+
+            // Device-adaptive animation: faster and simpler on mobile
+            const isMobile = window.innerWidth <= 768;
+            const closeDuration = isMobile ? 180 : 200;  // Snappy on both devices
+            const closeEasing = 'cubic-bezier(0.4, 0, 1, 1)';  // Accelerating ease-in
+
+            // Premium exit animation: scale down + slide + fade (simplified on mobile)
+            this.chatPanel.style.transition = `transform ${closeDuration}ms ${closeEasing}, opacity ${closeDuration}ms ease-in`;
+            this.chatPanel.style.transform = isMobile ? 'translateY(30px)' : 'scale(0.95) translateY(20px)';
+            this.chatPanel.style.opacity = '0';
+
+            // Complete exit, then clean up
+            setTimeout(() => {
+                this.chatPanel.classList.remove('visible');
+                this.chatPanel.classList.remove('animating-in');  // Remove animation class
+
+                // CRITICAL FIX: Clear inline styles set during animation
+                // These inline styles override CSS classes, preventing proper closing
+                this.chatPanel.style.visibility = '';
+                this.chatPanel.style.opacity = '';
+                this.chatPanel.style.transform = '';  // Clear transform from slide animation
+                this.chatPanel.style.transition = '';  // Clear custom transitions
+                this.chatPanel.style.pointerEvents = '';
+            }, closeDuration);
+
             this.chatWidgetBubble.classList.remove('chat-open');
 
-            // Re-enable body scroll
-            document.body.classList.remove('sw-chat-open');
+            // Clear bubble inline styles to make it visible again
+            this.chatWidgetBubble.style.opacity = '';
+            this.chatWidgetBubble.style.visibility = '';
+
+            // Restore widget icon in bubble (cleared during animation)
+            this.chatWidgetBubble.innerHTML = CONFIG.branding.widgetIcon;
+
+            // Re-enable body scroll (with position restoration on mobile)
+            this.restoreBodyScroll();
 
             if (this.chatInputBar && !this.isBarDismissed) {
                 this.chatInputBar.classList.remove('hidden');
             }
+
+            // Clear chat content if panel was opened but no conversation happened
+            // This prevents FAQ buttons from persisting as "zombies" in the DOM
+            if (this.messageHistory.length === 0) {
+                this.chatMessages.innerHTML = '';
+                this.firstMessageSent = false;
+            }
         }
         
         addMessage(content, sender) {
-            // Add timestamp before user message if completing a pair
-            if (sender === 'user' && this.messageHistory.length > 0) {
-                const lastMessage = this.messageHistory[this.messageHistory.length - 1];
-                if (lastMessage.role === 'bot') {
+            // Add timestamp before user message
+            if (sender === 'user') {
+                if (this.messageHistory.length === 0) {
+                    // First user message - always show timestamp
                     this.addTimestamp();
+                } else {
+                    // Subsequent messages - check if last was bot and 5+ mins passed
+                    const lastMessage = this.messageHistory[this.messageHistory.length - 1];
+                    if (lastMessage.role === 'bot') {
+                        // Only show timestamp if 5+ minutes have passed
+                        const timeSinceLastMessage = Date.now() - new Date(lastMessage.time).getTime();
+                        const FIVE_MINUTES = 5 * 60 * 1000;
+
+                        if (timeSinceLastMessage >= FIVE_MINUTES) {
+                            this.addTimestamp();
+                        }
+                    }
                 }
             }
             
@@ -2403,7 +4186,7 @@ ${poweredByHTML}
                 const avatar = document.createElement('div');
                 avatar.className = 'sw-message-avatar';
                 avatar.setAttribute('aria-hidden', 'true');
-                avatar.textContent = CONFIG.branding.botAvatar;
+                this.renderBotAvatar(avatar);
                 wrapper.appendChild(avatar);
                 
                 const contentDiv = document.createElement('div');
@@ -2420,8 +4203,23 @@ ${poweredByHTML}
             }
             
             this.chatMessages.appendChild(messageDiv);
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
             this.messageHistory.push({ role: sender, content, time: new Date() });
-            this.scrollToBottom();
+            this.saveConversation();  // Persist conversation to localStorage
+
+            // Scroll to show the new message if autoscroll is enabled
+            if (this.shouldAutoScroll) {
+                // Force layout recalculation (ensures DOM is ready)
+                void this.chatMessages.offsetHeight;
+                // Use smooth scroll for user messages (polished UX), instant for bot messages (responsive)
+                this.scrollToBottom(sender === 'user');
+            }
         }
         
         addBotMessage(messageId, content) {
@@ -2430,87 +4228,56 @@ ${poweredByHTML}
             messageDiv.setAttribute('role', 'article');
             messageDiv.setAttribute('aria-label', 'AI message');
             messageDiv.id = messageId;
-            
+
             const wrapper = document.createElement('div');
             wrapper.className = 'sw-message-wrapper';
-            
+
             const avatar = document.createElement('div');
             avatar.className = 'sw-message-avatar';
             avatar.setAttribute('aria-hidden', 'true');
-            avatar.textContent = CONFIG.branding.botAvatar;
+            this.renderBotAvatar(avatar);
             wrapper.appendChild(avatar);
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'sw-message-content';
-            contentDiv.textContent = content;
             wrapper.appendChild(contentDiv);
-            
+
             messageDiv.appendChild(wrapper);
             this.chatMessages.appendChild(messageDiv);
-            this.scrollToBottom();
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
+            }
+
+            // Apply rendering if content is provided (uses unified renderer)
+            // Empty content means streaming will populate it later
+            if (content) {
+                this.renderContentToDOM(contentDiv, content);
+            }
+
+            // Auto-scroll handled by MutationObserver - no manual scroll needed
         }
-        
+
         updateMessage(messageId, content) {
+            console.log('[SCROLL-DEBUG] updateMessage called', {
+                messageId,
+                contentLength: typeof content === 'string' ? content.length : 'structured',
+                isActivelyStreaming: this.isActivelyStreaming,
+                userIsScrolling: this.userIsScrolling
+            });
+
             const messageDiv = document.getElementById(messageId);
             if (!messageDiv) return;
 
             const contentDiv = messageDiv.querySelector('.sw-message-content');
             if (!contentDiv) return;
 
-            // BACKWARDS COMPATIBLE PATH: Feature flag check
-            if (!CONFIG.enableRichContent) {
-                // Use existing behavior (plain text only)
-                contentDiv.textContent = content;
-                if (this.isNearBottom() && !this.userIsScrolling) {
-                    this.scrollToBottom();
-                }
-                return;
-            }
+            // Use unified renderer - single source of truth
+            this.renderContentToDOM(contentDiv, content);
 
-            // NEW PATH: Rich content rendering
-            try {
-                const messageData = this.detectMessageType(content);
-
-                switch (messageData.type) {
-                    case 'text':
-                        // Check if markdown is enabled and content has markdown syntax
-                        if (CONFIG.enableMarkdown && this.hasMarkdownSyntax(messageData.content)) {
-                            const html = this.renderMarkdown(messageData.content);
-                            contentDiv.innerHTML = html;
-                            contentDiv.classList.add('markdown');
-                        } else {
-                            // Plain text (safe, uses textContent)
-                            contentDiv.textContent = messageData.content;
-                        }
-                        break;
-
-                    case 'card':
-                        const cardHtml = this.renderCard(messageData);
-                        contentDiv.innerHTML = cardHtml;
-                        contentDiv.classList.add('card-container');
-                        break;
-
-                    case 'carousel':
-                        const carouselHtml = this.renderCarousel(messageData.items);
-                        contentDiv.innerHTML = carouselHtml;
-                        contentDiv.classList.add('card-container');
-                        break;
-
-                    default:
-                        // Unknown type: fallback to text
-                        console.warn('[Chatbot] Unknown message type:', messageData.type);
-                        contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
-                }
-
-                // Scroll behavior (unchanged)
-                if (this.isNearBottom() && !this.userIsScrolling) {
-                    this.scrollToBottom();
-                }
-            } catch (error) {
-                console.error('[Chatbot] updateMessage rendering error:', error);
-                // Emergency fallback: show as plain text
-                contentDiv.textContent = typeof content === 'string' ? content : JSON.stringify(content);
-            }
+            // MutationObserver handles auto-scroll during streaming
         }
         
         showTypingIndicator(messageId) {
@@ -2520,6 +4287,15 @@ ${poweredByHTML}
                 if (contentDiv) {
                     contentDiv.className = 'sw-typing-indicator';
                     contentDiv.innerHTML = '<div class="sw-typing-dot"></div><div class="sw-typing-dot"></div><div class="sw-typing-dot"></div>';
+
+                    // Ensure typing indicator is visible - explicit scroll after user message smooth scroll
+                    // This prevents the indicator from being cut off when it appears quickly (<16ms)
+                    if (this.shouldAutoScroll) {
+                        // Force layout recalculation to ensure typing dots are rendered
+                        void this.chatMessages.offsetHeight;
+                        // Use instant scroll for immediate feedback (user message already scrolled smoothly)
+                        this.scrollToBottom(false);
+                    }
                 }
             }
         }
@@ -2537,36 +4313,247 @@ ${poweredByHTML}
         
         addTimestamp() {
             const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB', { 
-                day: '2-digit', 
-                month: 'short', 
-                year: 'numeric' 
-            }) + ', ' + now.toLocaleTimeString('en-GB', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            // Format: "2025 Nov 15, 14:13"
+            const year = now.getFullYear();
+            const month = now.toLocaleDateString('en-US', { month: 'short' });
+            const day = now.getDate();
+            const time = now.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
             });
-            
+            const dateStr = `${year} ${month} ${day}, ${time}`;
+
             const timestamp = document.createElement('div');
             timestamp.className = 'sw-timestamp-separator';
             timestamp.setAttribute('role', 'separator');
             timestamp.setAttribute('aria-label', `Message sent at ${dateStr}`);
             timestamp.textContent = dateStr;
             this.chatMessages.appendChild(timestamp);
-        }
-        
-        scrollToBottom() {
-            // Only auto-scroll if user isn't manually scrolling
-            if (!this.userIsScrolling) {
-                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+
+            // Ensure sentinel stays at bottom
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                this.chatMessages.appendChild(sentinel);
             }
         }
-        
-        // Check if user is at bottom of chat (within 100px)
+
+        // ========================================
+        // BULLETPROOF AUTO-SCROLL SYSTEM
+        // Detects user INTENT before scroll happens (wheel/touch/keyboard)
+        // Prevents fighting user even during rapid content updates
+        // ========================================
+
+        setupScrollListener() {
+            if (!this.chatMessages) {
+                console.warn('[AutoScroll] Cannot setup scroll listener - chatMessages not found');
+                return;
+            }
+
+            console.log('[AutoScroll] Setting up scroll intent detection');
+
+            // MOUSE WHEEL - Fires BEFORE scroll (prevents fighting)
+            this.chatMessages.addEventListener('wheel', (e) => {
+                // Scrolling up - disable immediately
+                if (e.deltaY < 0) {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Wheel up - disabled');
+                }
+                // Scrolling down - check if at bottom after scroll
+                else if (e.deltaY > 0 && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Wheel to bottom - enabled');
+                        }
+                    }, 50);
+                }
+            }, { passive: true });
+
+            // TOUCH - Fires BEFORE scroll (mobile support)
+            let touchStartY = 0;
+            this.chatMessages.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            this.chatMessages.addEventListener('touchmove', (e) => {
+                const touchY = e.touches[0].clientY;
+                const deltaY = touchY - touchStartY;
+
+                // Swiping down = scrolling up (disable autoscroll)
+                if (deltaY > 5) {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Touch up - disabled');
+                }
+                // Swiping up = scrolling down (check if at bottom)
+                else if (deltaY < -5 && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Touch to bottom - enabled');
+                        }
+                    }, 50);
+                }
+
+                touchStartY = touchY;
+            }, { passive: true });
+
+            // KEYBOARD - Fires BEFORE scroll
+            this.chatMessages.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'Home') {
+                    this.shouldAutoScroll = false;
+                    this.lastUserScrollTime = Date.now();
+                    console.log('[AutoScroll] Keyboard up - disabled');
+                }
+                else if ((e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === 'End') && !this.shouldAutoScroll) {
+                    setTimeout(() => {
+                        if (this.isNearBottom()) {
+                            this.shouldAutoScroll = true;
+                            console.log('[AutoScroll] Keyboard to bottom - enabled');
+                        }
+                    }, 50);
+                }
+            }, { passive: true });
+
+            // FALLBACK: Scroll position tracking (for edge cases)
+            let lastScrollTop = 0;
+            this.chatMessages.addEventListener('scroll', () => {
+                if (this.isAutoScrolling) {
+                    lastScrollTop = this.chatMessages.scrollTop;
+                    return;
+                }
+
+                const currentScrollTop = this.chatMessages.scrollTop;
+                if (currentScrollTop !== lastScrollTop) {
+                    this.lastUserScrollTime = Date.now();
+
+                    if (currentScrollTop < lastScrollTop && this.shouldAutoScroll) {
+                        this.shouldAutoScroll = false;
+                        console.log('[AutoScroll] Scroll up fallback - disabled');
+                    }
+                    else if (currentScrollTop > lastScrollTop && !this.shouldAutoScroll && this.isNearBottom()) {
+                        this.shouldAutoScroll = true;
+                        console.log('[AutoScroll] Scroll to bottom fallback - enabled');
+                    }
+
+                    lastScrollTop = currentScrollTop;
+                }
+            }, { passive: true });
+        }
+
+        setupScrollObserver() {
+            if (!this.chatMessages) {
+                console.warn('[AutoScroll] Cannot setup observer - chatMessages not found');
+                return;
+            }
+
+            // Disconnect existing observer if any
+            if (this.scrollObserver) {
+                this.scrollObserver.disconnect();
+            }
+
+            console.log('[AutoScroll] Setting up MutationObserver');
+
+            // Watch for content changes - industry standard approach
+            this.scrollObserver = new MutationObserver(() => {
+                // PREVENT DOUBLE-SCROLL: Skip only if we scrolled in the last 16ms (one frame)
+                // This prevents redundant scrolls while still allowing subsequent content (typing indicator) to scroll
+                const timeSinceScroll = Date.now() - this.lastScrollTime;
+                if (this.isAutoScrolling && timeSinceScroll < 16) {
+                    return;
+                }
+
+                // Only scroll if user wants autoscroll (they're at bottom)
+                if (!this.shouldAutoScroll) {
+                    return;
+                }
+
+                // Double-check position (might have changed since last check)
+                if (!this.isNearBottom()) {
+                    console.log('[AutoScroll] Position changed, disabling autoscroll');
+                    this.shouldAutoScroll = false;
+                    return;
+                }
+
+                // User is at bottom, scroll to show new content
+                this.scrollToBottom();
+            });
+
+            // Observe chat messages container
+            this.scrollObserver.observe(this.chatMessages, {
+                childList: true,       // Watch for added/removed nodes
+                subtree: true,         // Watch all descendants
+                characterData: true    // Watch for text changes (streaming)
+            });
+
+            console.log('[AutoScroll] MutationObserver active');
+        }
+
+        scrollToBottom(smooth = false) {
+            if (!this.chatMessages) return;
+
+            // Mark that we're programmatically scrolling
+            this.isAutoScrolling = true;
+            this.lastScrollTime = Date.now(); // Track when we scrolled
+
+            // Get scroll target
+            const sentinel = document.getElementById('sw-scroll-sentinel');
+
+            // DEFENSIVE: Verify sentinel is actually in chatMessages
+            if (sentinel && sentinel.parentNode === this.chatMessages) {
+                // Force layout recalculation (iOS Safari fix)
+                void this.chatMessages.offsetHeight;
+
+                sentinel.scrollIntoView({
+                    behavior: smooth ? 'smooth' : 'instant',
+                    block: 'end',
+                    inline: 'nearest'
+                });
+            } else {
+                // Fallback to scrollTop (sentinel missing or misplaced)
+                void this.chatMessages.offsetHeight;
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            // Reset flag using double-RAF pattern for maximum reliability
+            // This ensures scroll event has completed on all browsers/devices
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    this.isAutoScrolling = false;
+                });
+            });
+        }
+
+        scrollToBottomThrottled() {
+            // Throttled version - check position first
+            if (!this.shouldAutoScroll || !this.isNearBottom()) {
+                return;
+            }
+
+            const now = Date.now();
+            if (now - this.lastScrollTime < this.scrollThrottleDelay) {
+                return;
+            }
+
+            this.lastScrollTime = now;
+            this.scrollToBottom(false);
+        }
+
+        // Check if user is at bottom of chat
         isNearBottom() {
-            const threshold = 100;
-            const position = this.chatMessages.scrollTop + this.chatMessages.clientHeight;
-            const height = this.chatMessages.scrollHeight;
-            return position >= height - threshold;
+            if (!this.chatMessages) {
+                return true; // Default to true if not initialized
+            }
+
+            const threshold = 100; // Very generous threshold (100px) for maximum reliability
+            const scrollTop = this.chatMessages.scrollTop;
+            const scrollHeight = this.chatMessages.scrollHeight;
+            const clientHeight = this.chatMessages.clientHeight;
+            const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+
+            return distanceFromBottom <= threshold;
         }
 
         // Auto-resize textarea as user types
@@ -2605,21 +4592,63 @@ ${poweredByHTML}
     }
     
     async function init() {
+        // MASTER KILL SWITCH - Check if widget is enabled
+        if (CONFIG.enabled === false) {
+            console.log('⚠️ Chatbot Widget is disabled (CONFIG.enabled = false)');
+
+            // Option 1: Show widget in disabled state with tooltip
+            if (CONFIG.disabledMessage?.enabled) {
+                const showDisabledWidget = () => {
+                    // Inject styles and HTML
+                    injectStyles();
+                    injectHTML();
+
+                    // Mark widget container as disabled
+                    const container = document.getElementById('semmelweis-chat-widget');
+                    if (container) {
+                        container.classList.add('sw-widget-disabled');
+                    }
+
+                    // Add tooltip data attributes to bubble and bar
+                    const bubble = document.getElementById('sw-chat-widget-bubble');
+                    const bar = document.querySelector('.sw-bar-container');
+
+                    [bubble, bar].forEach(element => {
+                        if (element) {
+                            element.setAttribute('data-disabled-title', CONFIG.disabledMessage.title);
+                            element.setAttribute('data-disabled-text', CONFIG.disabledMessage.text);
+                            element.setAttribute('data-disabled-contact', CONFIG.disabledMessage.contact);
+                        }
+                    });
+
+                    console.log('ℹ️ Widget shown in disabled state');
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showDisabledWidget);
+                } else {
+                    showDisabledWidget();
+                }
+            }
+            // Option 2: Completely hidden - do nothing
+            return;
+        }
+
         const initialize = async () => {
             injectStyles();
             injectHTML();
 
-            // Load libraries if rich content enabled
-            if (CONFIG.enableRichContent) {
-                console.log('[Chatbot] Loading rich content libraries...');
+            // Load libraries if markdown or rich content enabled
+            if (CONFIG.enableMarkdown || CONFIG.enableRichContent) {
+                console.log('[Chatbot] Loading rendering libraries...');
                 await loadLibraries();
             }
 
             window.SemmelweisChatWidget = new ChatWidget();
             console.log('✅ Semmelweis Chatbot Widget v1.0.0 initialized');
+            console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
             console.log('[Chatbot] Rich content:', CONFIG.enableRichContent ? 'enabled' : 'disabled');
             if (CONFIG.enableRichContent) {
-                console.log('[Chatbot] Markdown:', CONFIG.enableMarkdown ? 'enabled' : 'disabled');
                 console.log('[Chatbot] Cards:', CONFIG.enableCards ? 'enabled' : 'disabled');
             }
         };
