@@ -294,7 +294,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            width: 320px;
+            width: 330px;
             transition:
                 transform var(--sw-timing-normal) var(--sw-ease-bounce),
                 width var(--sw-timing-normal) var(--sw-ease-premium),
